@@ -1,0 +1,926 @@
+<meta charset="utf-8"><!-- ファイルを直接ブラウザで開いた時の文字化け防止（WordPress貼り付け時は残してOK） -->
+<!-- ============================================================
+  愛媛マンダリンパイレーツ 試合情報ページ テンプレート
+  （明るめ・かっこかわいい版）
+
+  WordPress「カスタムHTML」ブロックにこのファイルの中身を
+  まるごと貼り付けて使用します。
+  ※ builder.html（穴埋めフォーム）を使えば入力だけで生成できます。
+  ※ デザインを修正したら builder.html 内の TEMPLATE_CSS にも
+     同じ修正を反映してください（2箇所で共通のCSS）。
+
+  不要なセクションは <section> や <div> ごと削除してOK。
+  編集する場所には ▼▼ 編集 ▼▼ の目印を付けています。
+============================================================ -->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Noto+Sans+JP:wght@400;500;700;900&family=M+PLUS+Rounded+1c:wght@700;800&display=swap');
+
+  .mp-game {
+    --mp-orange: #ff7719;
+    --mp-orange-dark: #ea6000;
+    --mp-orange-light: #ffa14a;
+    --mp-navy: #101c33;
+    --mp-navy-light: #1d2f52;
+    --mp-white: #ffffff;
+    --mp-cream: #fff6ec;
+    --mp-cream-line: #ffe3cd;
+    --mp-yellow: #ffd54f;
+    --mp-text: #22293a;
+    --mp-text-sub: #6b7280;
+    --mp-font-rounded: 'M PLUS Rounded 1c', 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+  }
+  .mp-game {
+    font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif;
+    color: var(--mp-text);
+    line-height: 1.8;
+    background: var(--mp-white);
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .mp-game *, .mp-game *::before, .mp-game *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  .mp-game img { max-width: 100%; display: block; }
+  .mp-game a { text-decoration: none; }
+  .mp-game .mp-en {
+    font-family: 'Oswald', 'Arial Black', Impact, sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* ============ アニメーション定義 ============ */
+  @keyframes mpgFadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+  @keyframes mpgFadeUpSkew { from { opacity: 0; transform: translateY(20px) skewX(-8deg); } to { opacity: 1; transform: skewX(-8deg); } }
+  @keyframes mpgStripes { from { background-position: 0 0; } to { background-position: 340px 0; } }
+  @keyframes mpgShine { from { background-position: 220% 0; } to { background-position: -20% 0; } }
+  @keyframes mpgFloat { from { transform: translateY(0) rotate(-6deg); } to { transform: translateY(-16px) rotate(8deg); } }
+  @keyframes mpgPulse {
+    0%, 100% { transform: scale(1); text-shadow: 0 0 12px rgba(255, 255, 255, 0.55); }
+    50%      { transform: scale(1.12); text-shadow: 0 0 24px rgba(255, 255, 255, 0.95); }
+  }
+  @keyframes mpgGlowOrange {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 119, 25, 0.55); }
+    50%      { box-shadow: 0 0 0 12px rgba(255, 119, 25, 0); }
+  }
+  @keyframes mpgGlowWhite {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.6); }
+    50%      { box-shadow: 0 0 0 12px rgba(255, 255, 255, 0); }
+  }
+  @keyframes mpgGlowRed {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.55); }
+    50%      { box-shadow: 0 0 0 12px rgba(229, 57, 53, 0); }
+  }
+  @keyframes mpgBlink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: 0.25; } }
+  @keyframes mpgBob { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+  @keyframes mpgSwing { from { transform: rotate(-2deg); } to { transform: rotate(2deg); } }
+  @keyframes mpgHaloPulse { 0%, 100% { opacity: 0.55; transform: scale(1); } 50% { opacity: 0.9; transform: scale(1.15); } }
+  @keyframes mpgRotate { to { transform: rotate(360deg); } }
+  @keyframes mpgFall {
+    from { transform: translateY(-40px) rotate(0deg); opacity: 0.9; }
+    to   { transform: translateY(620px) rotate(540deg); opacity: 0; }
+  }
+  @keyframes mpgTicker { to { transform: translateX(-50%); } }
+  @keyframes mpgSheen {
+    0%        { transform: translateX(-160%) skewX(-20deg); }
+    55%, 100% { transform: translateX(320%) skewX(-20deg); }
+  }
+  @keyframes mpgGradShift { to { background-position: 300% 0; } }
+
+  /* ============ ヒーロー（明るいオレンジの試合カード） ============ */
+  .mpg-hero {
+    position: relative;
+    background: linear-gradient(135deg, var(--mp-orange-light) 0%, var(--mp-orange) 50%, #ff8f35 100%);
+    border-radius: 20px;
+    padding: 44px 28px 40px;
+    overflow: hidden;
+    color: var(--mp-white);
+    text-align: center;
+    isolation: isolate;
+  }
+  .mpg-hero::before {
+    content: "";
+    position: absolute;
+    top: -60%; left: -14%;
+    width: 36%; height: 220%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.08) 100%);
+    transform: skewX(-18deg);
+    clip-path: polygon(0 0, 34% 0, 12% 100%, 0 100%);
+  }
+  .mpg-hero::after {
+    content: "";
+    position: absolute;
+    top: -60%; right: -14%;
+    width: 36%; height: 220%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.08) 100%);
+    transform: skewX(-18deg);
+    clip-path: polygon(66% 0, 100% 0, 100% 100%, 88% 100%);
+  }
+  .mpg-hero > * { position: relative; z-index: 1; }
+
+  /* 回転する放射光線（集中線） */
+  .mpg-hero-rays {
+    position: absolute;
+    z-index: 0;
+    top: 50%; left: 50%;
+    width: 1200px; height: 1200px;
+    margin: -600px 0 0 -600px;
+    background: repeating-conic-gradient(from 0deg,
+      rgba(255, 255, 255, 0.20) 0deg 5deg, transparent 5deg 14deg);
+    animation: mpgRotate 60s linear infinite;
+    -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 62%);
+    mask-image: radial-gradient(circle, #000 0%, transparent 62%);
+  }
+  /* 動く斜めストライプ */
+  .mpg-hero-stripes {
+    position: absolute; inset: 0; z-index: 0;
+    background: repeating-linear-gradient(115deg, rgba(255,255,255,0.07) 0 14px, transparent 14px 34px);
+    animation: mpgStripes 16s linear infinite;
+  }
+  /* 中央の光のパルス */
+  .mpg-hero-glow {
+    position: absolute; z-index: 0;
+    top: -140px; left: 50%;
+    width: 480px; height: 480px; margin-left: -240px;
+    background: radial-gradient(circle, rgba(255, 236, 170, 0.55) 0%, transparent 65%);
+    animation: mpgHaloPulse 5s ease-in-out infinite;
+  }
+  /* 紙吹雪（白・黄・ネイビー） */
+  .mpg-confetti { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+  .mpg-confetti i {
+    position: absolute;
+    top: -40px;
+    width: 8px; height: 13px;
+    border-radius: 2px;
+    background: #ffffff;
+    opacity: 0.85;
+    animation: mpgFall 5.5s linear infinite;
+  }
+  .mpg-confetti i:nth-child(1)  { left: 6%;  animation-delay: 0s;    background: var(--mp-yellow); }
+  .mpg-confetti i:nth-child(2)  { left: 16%; animation-delay: -2.1s; width: 6px; height: 6px; border-radius: 50%; }
+  .mpg-confetti i:nth-child(3)  { left: 26%; animation-delay: -3.8s; animation-duration: 6.4s; background: var(--mp-navy-light); }
+  .mpg-confetti i:nth-child(4)  { left: 38%; animation-delay: -1.2s; background: var(--mp-yellow); animation-duration: 4.8s; }
+  .mpg-confetti i:nth-child(5)  { left: 50%; animation-delay: -4.6s; width: 6px; height: 6px; border-radius: 50%; }
+  .mpg-confetti i:nth-child(6)  { left: 62%; animation-delay: -0.6s; animation-duration: 6s; background: var(--mp-navy-light); }
+  .mpg-confetti i:nth-child(7)  { left: 72%; animation-delay: -3.1s; background: var(--mp-yellow); }
+  .mpg-confetti i:nth-child(8)  { left: 82%; animation-delay: -1.8s; width: 6px; height: 6px; border-radius: 50%; animation-duration: 4.6s; }
+  .mpg-confetti i:nth-child(9)  { left: 90%; animation-delay: -4.2s; animation-duration: 6.2s; background: var(--mp-navy-light); }
+  .mpg-confetti i:nth-child(10) { left: 96%; animation-delay: -2.7s; background: var(--mp-yellow); }
+  /* 浮遊する⚾と🍊 */
+  .mpg-fx {
+    position: absolute; z-index: 0;
+    font-size: 22px; opacity: 0.55;
+    animation: mpgFloat 4.5s ease-in-out infinite alternate;
+  }
+  .mpg-fx:nth-of-type(1) { top: 14%; left: 7%;  animation-delay: 0s;    font-size: 26px; }
+  .mpg-fx:nth-of-type(2) { top: 62%; left: 13%; animation-delay: -1.2s; font-size: 18px; }
+  .mpg-fx:nth-of-type(3) { top: 20%; right: 9%; animation-delay: -2.1s; font-size: 20px; }
+  .mpg-fx:nth-of-type(4) { top: 68%; right: 14%; animation-delay: -3s;  font-size: 24px; }
+  .mpg-fx:nth-of-type(5) { top: 8%;  left: 46%; animation-delay: -1.8s; font-size: 16px; }
+  .mpg-fx:nth-of-type(6) { top: 78%; left: 44%; animation-delay: -0.6s; font-size: 18px; }
+
+  /* 登場アニメーション（上から順にふわっと） */
+  .mpg-hero-eyebrow { animation: mpgFadeUpSkew 0.6s 0.05s ease both; }
+  .mpg-day-badge    { animation: mpgFadeUp 0.6s 0.15s ease both, mpgSwing 2.6s 1.2s ease-in-out infinite alternate; }
+  .mpg-hero-date    { animation: mpgFadeUp 0.6s 0.25s ease both, mpgShine 4.5s 1s linear infinite; }
+  .mpg-mascots      { animation: mpgFadeUp 0.6s 0.33s ease both; }
+  .mpg-vs           { animation: mpgFadeUp 0.6s 0.42s ease both; }
+  .mpg-hero-venue   { animation: mpgFadeUp 0.6s 0.5s ease both; }
+  .mpg-hero-time    { animation: mpgFadeUp 0.6s 0.58s ease both; }
+
+  .mpg-hero-eyebrow {
+    display: inline-block;
+    padding: 6px 22px;
+    background: var(--mp-white);
+    color: var(--mp-orange-dark);
+    font-size: 13px;
+    letter-spacing: 0.2em;
+    border-radius: 4px;
+    transform: skewX(-8deg);
+    box-shadow: 0 4px 14px rgba(16, 28, 51, 0.18);
+  }
+  .mpg-day-badge {
+    display: block;
+    width: fit-content;
+    margin: 14px auto 0;
+    padding: 6px 22px;
+    background: var(--mp-white);
+    color: var(--mp-navy);
+    font-family: var(--mp-font-rounded);
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%);
+  }
+  /* 日付：特大・イタリック＋シャイン（光が流れる）演出 */
+  .mpg-hero-date {
+    margin-top: 14px;
+    font-size: clamp(58px, 11vw, 104px);
+    font-style: italic;
+    line-height: 1.05;
+    background: linear-gradient(110deg, #ffffff 38%, #fff3c4 47%, var(--mp-yellow) 53%, #ffffff 62%);
+    background-size: 240% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* マスコット（チーム名の上に並ぶ） */
+  .mpg-mascots {
+    margin-top: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 22px;
+  }
+  .mpg-mascot {
+    width: clamp(84px, 16%, 130px);
+    animation: mpgBob 1.6s ease-in-out infinite alternate;
+    filter: drop-shadow(0 6px 12px rgba(120, 50, 0, 0.28));
+  }
+  .mpg-mascot:nth-child(2) { animation-delay: -0.8s; }
+  .mpg-mascot img { width: 100%; }
+  .mpg-bubble {
+    display: block;
+    margin: 0 auto 6px;
+    padding: 5px 12px;
+    background: var(--mp-white);
+    color: var(--mp-navy);
+    font-family: var(--mp-font-rounded);
+    font-size: 11.5px;
+    font-weight: 800;
+    border-radius: 999px;
+    white-space: nowrap;
+    position: relative;
+    width: fit-content;
+  }
+  .mpg-bubble::after {
+    content: "";
+    position: absolute;
+    bottom: -5px; left: 50%; margin-left: -5px;
+    border-width: 5px 5px 0;
+    border-style: solid;
+    border-color: var(--mp-white) transparent transparent;
+  }
+
+  .mpg-vs {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .mpg-team {
+    font-family: var(--mp-font-rounded);
+    font-size: clamp(17px, 3vw, 24px);
+    font-weight: 800;
+    line-height: 1.4;
+  }
+  .mpg-team small {
+    display: block;
+    font-family: 'Oswald', 'Arial Black', Impact, sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    color: rgba(255, 255, 255, 0.8);
+  }
+  .mpg-vs-mark {
+    font-family: 'Oswald', 'Arial Black', Impact, sans-serif;
+    font-weight: 600;
+    font-size: clamp(28px, 5vw, 44px);
+    font-style: italic;
+    color: var(--mp-navy);
+    line-height: 1;
+    display: inline-block;
+    animation: mpgPulse 2.2s ease-in-out infinite;
+  }
+  .mpg-hero-venue { margin-top: 14px; font-size: 15px; font-weight: 700; letter-spacing: 0.06em; }
+  .mpg-hero-time {
+    margin-top: 12px;
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+  }
+  /* 開場（白の半透明チップ） */
+  .mpg-time-chip {
+    padding: 6px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.14);
+  }
+  .mpg-time-chip strong {
+    font-family: 'Oswald', 'Arial Black', Impact, sans-serif;
+    font-weight: 600;
+    font-size: 1.2em;
+    letter-spacing: 0.05em;
+    color: var(--mp-white);
+    margin-left: 6px;
+  }
+  /* 試合開始（イエロー・3つの中で一番目立つ） */
+  .mpg-time-chip--start {
+    background: var(--mp-yellow);
+    border-color: var(--mp-yellow);
+    color: var(--mp-navy);
+    font-size: 16px;
+    padding: 9px 26px;
+    animation: mpgGlowWhite 2.4s ease-out infinite;
+  }
+  .mpg-time-chip--start strong { color: var(--mp-orange-dark); font-size: 1.35em; }
+  /* 高校生以下無料（ネイビー） */
+  .mpg-time-chip--fill {
+    background: var(--mp-navy);
+    border-color: var(--mp-navy);
+  }
+  .mpg-time-chip--fill strong { color: var(--mp-yellow); }
+
+  /* ============ 電光掲示板風ティッカー（イエロー） ============ */
+  .mpg-ticker {
+    margin-top: 12px;
+    background: var(--mp-yellow);
+    border-radius: 12px;
+    overflow: hidden;
+    padding: 9px 0;
+  }
+  .mpg-ticker-track {
+    display: inline-flex;
+    white-space: nowrap;
+    animation: mpgTicker 16s linear infinite;
+  }
+  .mpg-ticker-track span {
+    font-family: 'Oswald', 'Arial Black', Impact, sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--mp-navy);
+    font-size: 14px;
+    padding-right: 48px;
+  }
+  .mpg-ticker-track span b { color: var(--mp-orange-dark); font-weight: 600; }
+
+  /* ============ ポスター（光るグラデーション枠） ============ */
+  .mpg-poster {
+    margin-top: 20px;
+    padding: 5px;
+    border-radius: 15px;
+    background: linear-gradient(120deg,
+      var(--mp-orange), var(--mp-yellow), var(--mp-orange-dark), var(--mp-orange));
+    background-size: 300% 100%;
+    animation: mpgGradShift 6s linear infinite alternate;
+  }
+  .mpg-poster img { width: 100%; border-radius: 11px; }
+
+  /* ============ 開催概要テーブル ============ */
+  .mpg-table { width: 100%; margin-top: 28px; border-collapse: collapse; font-size: 14.5px; }
+  .mpg-table th, .mpg-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--mp-cream-line);
+    text-align: left;
+    vertical-align: top;
+  }
+  .mpg-table th {
+    width: 130px;
+    background: var(--mp-cream);
+    color: var(--mp-navy);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .mpg-table td strong { color: var(--mp-orange-dark); }
+
+  /* ============ セクション見出し（斜めチップ＋グラデ下線） ============ */
+  .mpg-section { margin-top: 44px; }
+  .mpg-sec-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 0 10px;
+    line-height: 1.3;
+    border-bottom: 3px solid;
+    border-image: linear-gradient(90deg, var(--mp-orange), var(--mp-yellow) 45%, transparent 75%) 1;
+  }
+  .mpg-sec-title .ja {
+    font-family: var(--mp-font-rounded);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--mp-navy);
+  }
+  .mpg-sec-title .en {
+    order: -1;
+    font-family: 'Oswald', 'Arial Black', Impact, sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    color: var(--mp-white);
+    background: linear-gradient(120deg, var(--mp-orange), var(--mp-orange-dark));
+    padding: 4px 14px;
+    transform: skewX(-12deg);
+    text-transform: uppercase;
+  }
+  .mpg-section > p { margin-top: 14px; font-size: 14.5px; }
+
+  /* ============ リスト（セレモニーなど） ============ */
+  .mpg-list { margin-top: 14px; list-style: none; }
+  .mpg-list li {
+    position: relative;
+    padding: 10px 0 10px 26px;
+    border-bottom: 1px dashed var(--mp-cream-line);
+    font-size: 14.5px;
+  }
+  .mpg-list li::before {
+    content: "";
+    position: absolute;
+    left: 4px; top: 19px;
+    width: 10px; height: 10px;
+    background: linear-gradient(135deg, var(--mp-orange), var(--mp-yellow));
+    transform: rotate(45deg);
+  }
+
+  /* ============ ミニカード（画像は入れても入れなくてもOK） ============ */
+  .mpg-cards {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .mpg-mini {
+    position: relative;
+    background: var(--mp-white);
+    border: 1px solid var(--mp-cream-line);
+    border-radius: 14px;
+    padding: 20px 16px 16px;
+    box-shadow: 0 3px 12px rgba(255, 119, 25, 0.10);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    overflow: hidden;
+  }
+  .mpg-mini::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--mp-orange), var(--mp-yellow));
+    z-index: 1;
+  }
+  .mpg-mini:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(255, 119, 25, 0.20); }
+  .mpg-mini-photo { margin: -20px -16px 12px; overflow: hidden; }
+  .mpg-mini-photo img {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+  .mpg-mini:hover .mpg-mini-photo img { transform: scale(1.05); }
+  .mpg-mini-badge {
+    display: inline-block;
+    padding: 3px 14px;
+    background: var(--mp-navy);
+    color: var(--mp-white);
+    font-family: var(--mp-font-rounded);
+    font-size: 11px;
+    font-weight: 800;
+    border-radius: 999px;
+    letter-spacing: 0.08em;
+  }
+  .mpg-mini-badge--orange { background: linear-gradient(120deg, var(--mp-orange), var(--mp-orange-dark)); }
+  .mpg-mini h4 {
+    margin-top: 8px;
+    font-family: var(--mp-font-rounded);
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--mp-navy);
+    line-height: 1.5;
+  }
+  .mpg-mini p { margin-top: 6px; font-size: 12.5px; color: var(--mp-text-sub); }
+
+  /* ============ YouTube配信バンド ============ */
+  .mpg-live {
+    margin-top: 44px;
+    background:
+      repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.04) 0 12px, transparent 12px 30px),
+      linear-gradient(115deg, var(--mp-navy) 0%, var(--mp-navy-light) 100%);
+    border-radius: 16px;
+    padding: 26px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+    color: var(--mp-white);
+  }
+  .mpg-live-thumb {
+    width: 220px;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+  .mpg-live-label { display: flex; align-items: center; gap: 14px; }
+  .mpg-live-play {
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    background: #e53935;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: var(--mp-white);
+    flex-shrink: 0;
+    animation: mpgGlowRed 2s ease-out infinite;
+  }
+  .mpg-live-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    margin-right: 6px;
+    background: #e53935;
+    color: var(--mp-white);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    border-radius: 4px;
+    vertical-align: 2px;
+    animation: mpgBlink 1.4s steps(1) infinite;
+  }
+  .mpg-live-label strong { font-family: var(--mp-font-rounded); font-weight: 800; font-size: 17px; display: block; }
+  .mpg-live-label span { font-size: 12.5px; color: #9fb0d0; }
+
+  /* ============ ボタン（光が走るシャイン付き） ============ */
+  .mpg-btn {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+    padding: 12px 28px;
+    border-radius: 999px;
+    background: linear-gradient(120deg, var(--mp-orange), var(--mp-orange-dark));
+    color: var(--mp-white);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .mpg-btn::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 40%;
+    background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+    transform: translateX(-160%) skewX(-20deg);
+    animation: mpgSheen 3.2s ease-in-out infinite;
+  }
+  .mpg-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255, 119, 25, 0.4); }
+  .mpg-btn--glow { animation: mpgGlowOrange 2.4s ease-out infinite; }
+  .mpg-btn--outline {
+    background: transparent;
+    border: 2px solid var(--mp-navy);
+    color: var(--mp-navy);
+  }
+  .mpg-btn--outline::before { display: none; }
+  .mpg-btn--outline:hover { background: var(--mp-navy); color: var(--mp-white); box-shadow: none; }
+
+  /* ============ アクセス ============ */
+  .mpg-access {
+    margin-top: 16px;
+    background: var(--mp-cream);
+    border: 1px solid var(--mp-cream-line);
+    border-radius: 14px;
+    padding: 22px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .mpg-access-photo {
+    width: 220px;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+  .mpg-access-info strong { display: block; font-size: 16px; color: var(--mp-navy); }
+  .mpg-access-info span { display: block; margin-top: 4px; font-size: 13.5px; color: var(--mp-text-sub); }
+
+  /* ============ 注意事項 ============ */
+  .mpg-notes {
+    margin-top: 44px;
+    background: #fff8f0;
+    border-left: 5px solid var(--mp-orange);
+    border-radius: 0 14px 14px 0;
+    padding: 22px 24px;
+  }
+  .mpg-notes h3 {
+    font-family: var(--mp-font-rounded);
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--mp-navy);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mpg-notes ul { margin-top: 10px; list-style: none; }
+  .mpg-notes li { position: relative; padding: 4px 0 4px 20px; font-size: 13.5px; color: var(--mp-text); }
+  .mpg-notes li::before { content: "※"; position: absolute; left: 0; color: var(--mp-orange-dark); }
+
+  /* ============ CTAボタン列 ============ */
+  .mpg-cta { margin-top: 36px; display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+
+  /* ============ SNSフォロー（明るいクリーム） ============ */
+  .mpg-sns {
+    margin-top: 44px;
+    text-align: center;
+    background: var(--mp-cream);
+    border: 1px solid var(--mp-cream-line);
+    border-radius: 16px;
+    padding: 28px 24px;
+  }
+  .mpg-sns h3 {
+    font-family: var(--mp-font-rounded);
+    color: var(--mp-navy);
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+  }
+  .mpg-sns p { margin-top: 6px; font-size: 12.5px; color: var(--mp-text-sub); }
+  .mpg-sns-btns { margin-top: 16px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+  .mpg-sns-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 20px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--mp-white);
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+  .mpg-sns-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+  .mpg-sns-btn--x { background: #000000; }
+  .mpg-sns-btn--ig { background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af); }
+  .mpg-sns-btn--yt { background: #e53935; }
+  .mpg-sns-btn--line { background: #06c755; }
+
+  /* ============ スマホ対応 ============ */
+  @media (max-width: 640px) {
+    .mpg-hero { padding: 32px 18px 34px; border-radius: 14px; }
+    .mpg-fx { font-size: 15px !important; }
+    .mpg-mascot { width: 74px; }
+    .mpg-mascots { gap: 14px; }
+    .mpg-bubble { font-size: 10px; padding: 4px 9px; }
+    .mpg-ticker-track span { font-size: 12px; }
+    .mpg-table th { width: 96px; padding: 12px 10px; font-size: 13px; }
+    .mpg-table td { padding: 12px 10px; font-size: 13.5px; }
+    .mpg-sec-title .ja { font-size: 18px; }
+    .mpg-live { justify-content: center; text-align: center; }
+    .mpg-live-label { flex-direction: column; }
+    .mpg-live-thumb { width: 100%; }
+    .mpg-access { justify-content: center; text-align: center; }
+    .mpg-access-photo { width: 100%; }
+  }
+  /* 「視差効果を減らす」設定のユーザーにはアニメーションを止める */
+  @media (prefers-reduced-motion: reduce) {
+    .mp-game *, .mp-game *::before, .mp-game *::after { animation: none !important; transition: none !important; }
+    .mpg-hero-date { color: var(--mp-white); background: none; }
+  }
+</style>
+
+<div class="mp-game">
+
+  <!-- ▼▼ 編集：ヒーロー（試合の基本情報） ▼▼
+       ・日付、曜日、対戦相手、球場、開場/開始時刻を書き換え
+       ・応援デーなどがない試合は mpg-day-badge の行を削除
+       ・マスコット画像：img src を差し替え（背景透過PNG推奨）
+       ・吹き出しは愛媛のマスコット側（左）に。右に付けたい場合は
+         <span class="mpg-bubble">…</span> を2体目の div に移動 -->
+  <section class="mpg-hero">
+    <div class="mpg-hero-rays"></div>
+    <div class="mpg-hero-stripes"></div>
+    <div class="mpg-hero-glow"></div>
+    <div class="mpg-confetti"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <span class="mpg-fx">⚾</span>
+    <span class="mpg-fx">🍊</span>
+    <span class="mpg-fx">🍊</span>
+    <span class="mpg-fx">⚾</span>
+    <span class="mpg-fx">✨</span>
+    <span class="mpg-fx">🍊</span>
+
+    <span class="mpg-hero-eyebrow mp-en">HOME GAME</span>
+    <span class="mpg-day-badge">⚾ 八幡浜市応援デー 同時開催！ ⚾</span>
+    <div class="mpg-hero-date mp-en">7.19 <small>SUN</small></div>
+
+    <!-- マスコット2体（チーム名の上） -->
+    <div class="mpg-mascots">
+      <div class="mpg-mascot">
+        <span class="mpg-bubble">みんな来てね！</span>
+        <img src="https://placehold.jp/20/ff7719/ffffff/200x220.png?text=マスコット" alt="マスコット">
+      </div>
+      <div class="mpg-mascot">
+        <img src="https://placehold.jp/20/ffd54f/101c33/200x220.png?text=マスコット" alt="マスコット">
+      </div>
+    </div>
+
+    <div class="mpg-vs">
+      <div class="mpg-team">愛媛マンダリンパイレーツ<small>EHIME MANDARIN PIRATES</small></div>
+      <span class="mpg-vs-mark">VS</span>
+      <div class="mpg-team">香川オリーブガイナーズ<small>KAGAWA OLIVE GUYNERS</small></div>
+    </div>
+    <p class="mpg-hero-venue">📍 坊っちゃんスタジアム（松山市市坪西町625番地1）</p>
+    <div class="mpg-hero-time">
+      <span class="mpg-time-chip">開場<strong>12:00</strong></span>
+      <span class="mpg-time-chip mpg-time-chip--start">試合開始<strong>13:00</strong></span>
+      <span class="mpg-time-chip mpg-time-chip--fill">高校生以下<strong>無料</strong></span>
+    </div>
+  </section>
+  <!-- ▲▲ ヒーローここまで ▲▲ -->
+
+  <!-- 電光掲示板風ティッカー（文言は自由に変更OK。2つのspanは同じ文にする） -->
+  <div class="mpg-ticker" aria-hidden="true">
+    <div class="mpg-ticker-track">
+      <span>GO! GO! MANDARIN PIRATES! ⚾ <b>突覇 〜最後まで諦めない〜</b> 🍊 EHIME MANDARIN PIRATES 2026</span>
+      <span>GO! GO! MANDARIN PIRATES! ⚾ <b>突覇 〜最後まで諦めない〜</b> 🍊 EHIME MANDARIN PIRATES 2026</span>
+    </div>
+  </div>
+
+  <!-- ▼▼ 編集：試合ポスター画像（ポスターが無い試合はこのブロックを削除） ▼▼ -->
+  <figure class="mpg-poster">
+    <img src="https://placehold.jp/28/101c33/ff7719/1200x630.png?text=試合ポスター画像" alt="試合ポスター">
+  </figure>
+  <!-- ▲▲ ポスターここまで ▲▲ -->
+
+  <!-- ▼▼ 編集：試合開催概要 ▼▼ -->
+  <table class="mpg-table">
+    <tr>
+      <th>試合日時</th>
+      <td>2026年7月19日（日）13:00試合開始（12:00開場）</td>
+    </tr>
+    <tr>
+      <th>対戦カード</th>
+      <td>愛媛マンダリンパイレーツ VS 香川オリーブガイナーズ<br>（四国アイランドリーグplus 公式戦）</td>
+    </tr>
+    <tr>
+      <th>会場</th>
+      <td>坊っちゃんスタジアム（松山市市坪西町625番地1）<br>JR市坪駅から徒歩2分</td>
+    </tr>
+    <tr>
+      <th>チケット</th>
+      <td>全席自由席　大人当日券 <strong>1,000円（税込）</strong>／<strong>高校生以下無料</strong></td>
+    </tr>
+  </table>
+  <!-- ▲▲ 開催概要ここまで ▲▲ -->
+
+  <!-- ▼▼ 編集：オープニングアクト（無い試合はセクションごと削除） ▼▼ -->
+  <section class="mpg-section">
+    <h2 class="mpg-sec-title"><span class="ja">オープニングアクト</span><span class="en">Opening Act</span></h2>
+    <ul class="mpg-list">
+      <li>〇〇高校 吹奏楽部によるオープニング演奏</li>
+    </ul>
+  </section>
+
+  <!-- ▼▼ 編集：オープニングセレモニー ▼▼ -->
+  <section class="mpg-section">
+    <h2 class="mpg-sec-title"><span class="ja">オープニングセレモニー</span><span class="en">Ceremony</span></h2>
+    <ul class="mpg-list">
+      <li>国歌斉唱：〇〇 〇〇さん</li>
+      <li>始球式：〇〇市立〇〇中学校 野球部主将</li>
+      <li>ご挨拶：〇〇市長 〇〇 〇〇 様</li>
+    </ul>
+  </section>
+
+  <!-- ▼▼ 編集：来場者プレゼント（画像は入れても入れなくてもOK） ▼▼
+       画像を入れる場合：<div class="mpg-mini-photo"><img src="画像URL" alt=""></div> を
+       カードの先頭に置く。不要ならその3行を削除 -->
+  <section class="mpg-section">
+    <h2 class="mpg-sec-title"><span class="ja">来場者プレゼント</span><span class="en">Present</span></h2>
+    <div class="mpg-cards">
+      <div class="mpg-mini">
+        <div class="mpg-mini-photo"><img src="https://placehold.jp/24/fff3e8/ea6000/400x250.png?text=選手カード写真" alt="オリジナル選手カード"></div>
+        <span class="mpg-mini-badge mpg-mini-badge--orange">先着400名様</span>
+        <h4>オリジナル選手カード</h4>
+        <p>ご来場のみなさまに入場口でお配りします。</p>
+      </div>
+      <div class="mpg-mini">
+        <span class="mpg-mini-badge mpg-mini-badge--orange">先着500名様</span>
+        <h4>マフラータオル</h4>
+        <p>応援デー限定デザイン。夏の観戦のお供にどうぞ！</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ▼▼ 編集：スタジアムイベント（イニング間のお楽しみ） ▼▼ -->
+  <section class="mpg-section">
+    <h2 class="mpg-sec-title"><span class="ja">スタジアムイベント</span><span class="en">Stadium Event</span></h2>
+    <p>試合の合間もお楽しみが盛りだくさん！</p>
+    <div class="mpg-cards">
+      <div class="mpg-mini">
+        <span class="mpg-mini-badge">イニング間</span>
+        <h4>愛媛の特産品が当たる抽選会</h4>
+        <p>抽選で50名様に愛媛の特産品が当たります！</p>
+      </div>
+      <div class="mpg-mini">
+        <div class="mpg-mini-photo"><img src="https://placehold.jp/24/ffd54f/101c33/400x250.png?text=チアダンス写真" alt="チアダンスパフォーマンス"></div>
+        <span class="mpg-mini-badge">3回裏終了後</span>
+        <h4>地元チアダンサーによるダンスパフォーマンス</h4>
+        <p>グラウンドで華やかなステージをお届け！</p>
+      </div>
+      <div class="mpg-mini">
+        <span class="mpg-mini-badge">5回裏終了後</span>
+        <h4>じゃこ天＆お菓子まき</h4>
+        <p>スタンドに向けて愛媛名物じゃこ天とお菓子をまきます！</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ▼▼ 編集：マンパイパーク ▼▼ -->
+  <section class="mpg-section">
+    <h2 class="mpg-sec-title"><span class="ja">マンパイパーク開園！</span><span class="en">Event</span></h2>
+    <p>試合当日は球場前広場に「マンパイパーク」が登場。ご家族そろってお楽しみいただけます。</p>
+    <div class="mpg-cards">
+      <div class="mpg-mini">
+        <div class="mpg-mini-photo"><img src="https://placehold.jp/24/1d2f52/ffffff/400x250.png?text=縁日写真" alt="縁日コーナー"></div>
+        <span class="mpg-mini-badge">縁日コーナー</span>
+        <h4>ガラポン抽選 ほか（各100円）</h4>
+        <p>お子さま向けの縁日あそびが大集合。</p>
+      </div>
+      <div class="mpg-mini">
+        <div class="mpg-mini-photo"><img src="https://placehold.jp/24/1d2f52/ffffff/400x250.png?text=キッチンカー写真" alt="グルメエリア"></div>
+        <span class="mpg-mini-badge">グルメエリア</span>
+        <h4>キッチンカーが大集合</h4>
+        <p>ご当地グルメとスタジアムメシを味わえます。</p>
+      </div>
+      <div class="mpg-mini">
+        <span class="mpg-mini-badge">野球体験</span>
+        <h4>スピードガン・ストラックアウト（100円）</h4>
+        <p>選手気分で挑戦してみよう！</p>
+      </div>
+      <div class="mpg-mini">
+        <span class="mpg-mini-badge">展示</span>
+        <h4>選手イラストパネル展示</h4>
+        <p>全選手のイラストパネルがずらり。推し選手と記念撮影！</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ▼▼ 編集：グッズ情報 ▼▼ -->
+  <section class="mpg-section">
+    <h2 class="mpg-sec-title"><span class="ja">グッズ情報</span><span class="en">Goods</span></h2>
+    <ul class="mpg-list">
+      <li>2026年新グッズ12種類（300円〜6,000円）を球場売店で販売中</li>
+      <li>受注生産「応援タオル」受付中（締切：〇月〇日）</li>
+    </ul>
+  </section>
+
+  <!-- YouTube配信バンド（全試合共通・基本そのまま使えます）
+       ▼▼ 配信サムネ画像を入れない場合は下のimg 1行を削除 ▼▼ -->
+  <div class="mpg-live">
+    <img class="mpg-live-thumb" src="https://placehold.jp/24/101c33/ffffff/640x360.png?text=配信サムネイル" alt="配信サムネイル">
+    <div class="mpg-live-label">
+      <span class="mpg-live-play">▶</span>
+      <span>
+        <strong><span class="mpg-live-chip">LIVE</span>公式YouTubeで無料生配信！</strong>
+        <span>球場に来られない方もリアルタイムで応援できます</span>
+      </span>
+    </div>
+    <a class="mpg-btn" href="https://www.youtube.com/">配信ページはこちら</a>
+  </div>
+
+  <!-- ▼▼ 編集：アクセス ▼▼ -->
+  <section class="mpg-section">
+    <h2 class="mpg-sec-title"><span class="ja">アクセス</span><span class="en">Access</span></h2>
+    <div class="mpg-access">
+      <!-- ▼▼ 球場画像（無い場合はこのimg 1行を削除） ▼▼ -->
+      <img class="mpg-access-photo" src="https://placehold.jp/24/1d2f52/ffffff/640x360.png?text=球場写真" alt="坊っちゃんスタジアム">
+      <div class="mpg-access-info">
+        <strong>坊っちゃんスタジアム</strong>
+        <span>松山市市坪西町625番地1／JR市坪駅から徒歩2分</span>
+      </div>
+      <a class="mpg-btn mpg-btn--outline" href="https://maps.google.com/?q=坊っちゃんスタジアム">Googleマップで開く</a>
+    </div>
+  </section>
+
+  <!-- ▼▼ 編集：注意事項 ▼▼ -->
+  <div class="mpg-notes">
+    <h3>⚠ ご来場にあたってのお願い</h3>
+    <ul>
+      <li>雨天の場合、試合は延期となります。</li>
+      <li>イベント内容は予告なく変更となる場合があります。</li>
+      <li>駐車場の混雑が予想されます。公共交通機関のご利用をおすすめします。</li>
+    </ul>
+  </div>
+
+  <!-- CTAボタン -->
+  <div class="mpg-cta">
+    <a class="mpg-btn mpg-btn--glow" href="https://www.m-pirates.jp/ticket">チケット情報を見る</a>
+  </div>
+
+  <!-- SNSフォロー（全記事共通・基本そのまま使えます。リンク先だけ実URLに） -->
+  <div class="mpg-sns">
+    <h3>最新情報はSNSでチェック！</h3>
+    <p>試合速報・イベント情報・選手の素顔を毎日発信中</p>
+    <div class="mpg-sns-btns">
+      <a class="mpg-sns-btn mpg-sns-btn--ig" href="https://www.instagram.com/">Instagram</a>
+      <a class="mpg-sns-btn mpg-sns-btn--yt" href="https://www.youtube.com/">YouTube</a>
+      <a class="mpg-sns-btn mpg-sns-btn--x" href="https://x.com/">X（旧Twitter）</a>
+      <a class="mpg-sns-btn mpg-sns-btn--line" href="https://line.me/">LINE</a>
+    </div>
+  </div>
+
+</div>

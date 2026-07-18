@@ -1,0 +1,1568 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>マンパイ試合情報ページ ビルダー</title>
+<style>
+  /* ============ フォーム側UI（シンプル基調） ============ */
+  :root {
+    --orange: #ff7719;
+    --orange-dark: #ea6000;
+    --navy: #101c33;
+    --line: #e5e7eb;
+    --sub: #6b7280;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif;
+    background: #ffffff;
+    color: #22293a;
+    font-size: 14px;
+  }
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #ffffff;
+    border-bottom: 1px solid var(--line);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .topbar h1 { font-size: 15px; font-weight: 900; color: var(--navy); }
+  .topbar .spacer { flex: 1; }
+  .btn {
+    border: none;
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 9px 20px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-copy { background: var(--orange); color: #fff; }
+  .btn-sub { background: #fff; color: var(--navy); border: 1px solid var(--line); }
+  .btn-danger { background: transparent; color: var(--sub); text-decoration: underline; padding: 9px 4px; }
+  .topbar label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--sub);
+    cursor: pointer;
+  }
+  #copy-msg { font-size: 12px; color: #15803d; font-weight: 700; min-width: 110px; }
+
+  .wrap { display: flex; align-items: flex-start; }
+  .form-pane { width: 500px; min-width: 400px; padding: 6px 22px 80px; }
+  .preview-pane {
+    flex: 1;
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #f6f7f8;
+  }
+  .preview-head { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--sub); font-weight: 700; }
+  .pv-toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+  .pv-toggle button {
+    border: none;
+    background: transparent;
+    padding: 5px 14px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--sub);
+  }
+  .pv-toggle button.on { background: var(--navy); color: #fff; }
+  #pv-frame-box { flex: 1; display: flex; justify-content: center; overflow: hidden; }
+  #pv { width: 100%; height: 100%; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+  #pv.mobile { width: 375px; }
+
+  details { border-bottom: 1px solid var(--line); padding: 4px 0; }
+  summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 12px 0;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--navy);
+    display: flex;
+    align-items: center;
+    user-select: none;
+  }
+  summary::after { content: "▾"; margin-left: auto; color: #9ca3af; font-size: 12px; }
+  details[open] summary::after { content: "▴"; }
+  .sec-body { padding: 2px 0 18px; }
+  .hint { font-size: 11.5px; color: #9ca3af; margin: -2px 0 10px; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 4px; }
+  .field label .opt { font-weight: 500; color: #9ca3af; font-size: 11px; margin-left: 6px; }
+  input[type="text"], input[type="url"], input[type="date"], input[type="time"],
+  select, textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-family: inherit;
+    background: #fff;
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--orange); outline-offset: -1px; }
+  textarea { resize: vertical; min-height: 66px; line-height: 1.6; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+  /* 項目の行 */
+  .rows { display: flex; flex-direction: column; gap: 10px; }
+  .row { border: 1px solid var(--line); border-radius: 8px; padding: 10px 34px 10px 10px; position: relative; background: #fff; }
+  .row .del {
+    position: absolute;
+    top: 8px; right: 8px;
+    border: none;
+    background: transparent;
+    color: #9ca3af;
+    width: 22px; height: 22px;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+  }
+  .row .del:hover { color: #dc2626; }
+  .row input { margin-bottom: 6px; }
+  .row input:last-child { margin-bottom: 0; }
+  .add-btn {
+    margin-top: 8px;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: #374151;
+    border-radius: 8px;
+    padding: 7px;
+    width: 100%;
+    font-size: 12.5px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .add-btn:hover { background: #f9fafb; }
+
+  /* セクション編集ボックス */
+  .sec-box { border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 12px; background: #fcfcfd; }
+  .sec-head { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
+  .sec-head input[data-s="title"] { flex: 1.4; font-weight: 700; }
+  .sec-head input[data-s="en"] { flex: 1; }
+  .sec-head select { width: 84px; flex-shrink: 0; }
+  .sec-head .mv, .sec-head .secdel {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 6px;
+    width: 26px; height: 32px;
+    cursor: pointer;
+    color: var(--sub);
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .sec-head .secdel:hover { color: #dc2626; }
+  .sec-box > input[data-s="intro"] { margin-bottom: 10px; }
+  /* リスト形式のときは内容以外の入力欄を隠す */
+  .sec-box[data-layout="list"] .row input[data-k="badge"],
+  .sec-box[data-layout="list"] .row input[data-k="desc"],
+  .sec-box[data-layout="list"] .row input[data-k="img"] { display: none; }
+
+  @media (max-width: 1000px) {
+    .wrap { flex-direction: column; }
+    .form-pane { width: 100%; min-width: 0; }
+    .preview-pane { position: static; width: 100%; height: 640px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>⚾ マンパイ試合情報ページ ビルダー</h1>
+  <span class="spacer"></span>
+  <span id="copy-msg"></span>
+  <label><input type="checkbox" id="f-include-css" checked> CSSを含める</label>
+  <button class="btn btn-copy" id="btn-copy">HTMLをコピー</button>
+  <button class="btn btn-sub" id="btn-dl">ファイル保存</button>
+  <button class="btn btn-danger" id="btn-reset">リセット</button>
+</div>
+
+<div class="wrap">
+  <!-- ===================== 入力フォーム ===================== -->
+  <div class="form-pane">
+
+    <details open>
+      <summary>基本情報（毎試合ここを書き換え）</summary>
+      <div class="sec-body">
+        <div class="grid2">
+          <div class="field">
+            <label>試合日</label>
+            <input type="date" id="f-date" value="2026-07-19">
+          </div>
+          <div class="field">
+            <label>ラベル（英字）</label>
+            <input type="text" id="f-eyebrow" value="HOME GAME" placeholder="HOME GAME / NIGHT GAME など">
+          </div>
+        </div>
+        <div class="field">
+          <label>応援デーバッジ<span class="opt">空欄なら非表示</span></label>
+          <input type="text" id="f-daybadge" placeholder="例：⚾ 八幡浜市応援デー 同時開催！ ⚾">
+        </div>
+        <div class="field">
+          <label>対戦相手</label>
+          <select id="f-opponent">
+            <option>香川オリーブガイナーズ</option>
+            <option>徳島インディゴソックス</option>
+            <option>高知ファイティングドッグス</option>
+            <option>読売ジャイアンツ（三軍）</option>
+            <option>ロッテ・ジャイアンツ</option>
+            <option value="__other">その他（下に入力）</option>
+          </select>
+        </div>
+        <div class="grid2" id="opp-custom" style="display:none">
+          <div class="field">
+            <label>相手チーム名</label>
+            <input type="text" id="f-opp-name" placeholder="チーム名">
+          </div>
+          <div class="field">
+            <label>英字表記</label>
+            <input type="text" id="f-opp-en" placeholder="TEAM NAME">
+          </div>
+        </div>
+        <div class="field">
+          <label>大会名の注記</label>
+          <input type="text" id="f-league" value="四国アイランドリーグplus 公式戦">
+        </div>
+        <div class="field">
+          <label>球場</label>
+          <select id="f-stadium">
+            <option>坊っちゃんスタジアム</option>
+            <option>マドンナスタジアム</option>
+            <option>今治市営球場</option>
+            <option>新居浜市営野球場</option>
+            <option>宇和島市丸山公園野球場</option>
+            <option>八幡浜・大洲地区運動公園野球場</option>
+            <option>上島町いきなスポレク公園野球場</option>
+            <option value="__other">その他（下に入力）</option>
+          </select>
+        </div>
+        <div class="field" id="stadium-custom" style="display:none">
+          <label>球場名</label>
+          <input type="text" id="f-stadium-name" placeholder="球場名">
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label>球場の住所</label>
+            <input type="text" id="f-addr" placeholder="住所">
+          </div>
+          <div class="field">
+            <label>アクセス</label>
+            <input type="text" id="f-access" placeholder="例：JR市坪駅から徒歩2分">
+          </div>
+        </div>
+        <div class="grid3">
+          <div class="field">
+            <label>開場</label>
+            <input type="time" id="f-open" value="12:00">
+          </div>
+          <div class="field">
+            <label>試合開始</label>
+            <input type="time" id="f-start" value="13:00">
+          </div>
+          <div class="field">
+            <label>強調チップ<span class="opt">空欄で非表示</span></label>
+            <input type="text" id="f-chip" value="高校生以下 無料" placeholder="例：高校生以下 無料">
+          </div>
+        </div>
+        <div class="field">
+          <label>チケット</label>
+          <input type="text" id="f-ticket" value="全席自由席　大人当日券 1,000円（税込）／高校生以下無料">
+          <p class="hint">金額と「無料」は自動で太字（オレンジ）になります</p>
+        </div>
+      </div>
+    </details>
+
+    <details open>
+      <summary>画像・マスコット</summary>
+      <div class="sec-body">
+        <p class="hint">WordPressのメディアライブラリに画像をアップロード →「URLをコピー」して貼り付け。空欄の項目は表示されません。マスコットはチーム名の上に並びます。</p>
+        <div class="grid2">
+          <div class="field">
+            <label>試合ポスター画像URL</label>
+            <input type="url" id="f-poster" placeholder="https://...（横長 1200×630前後）">
+          </div>
+          <div class="field">
+            <label>球場画像URL<span class="opt">アクセス欄に表示・空欄なら画像なし</span></label>
+            <input type="url" id="f-stadium-img" placeholder="https://...（横長 640×360前後）">
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label>マスコット画像（左）</label>
+            <input type="url" id="f-mascot-l" placeholder="https://...（透過PNG推奨）">
+          </div>
+          <div class="field">
+            <label>マスコット画像（右）</label>
+            <input type="url" id="f-mascot-r" placeholder="https://...（透過PNG推奨）">
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label>マスコットの吹き出し<span class="opt">空欄で非表示</span></label>
+            <input type="text" id="f-bubble" value="みんな来てね！">
+          </div>
+          <div class="field">
+            <label>吹き出しを付ける側</label>
+            <select id="f-bubble-side">
+              <option value="left">左のマスコット</option>
+              <option value="right">右のマスコット</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details open>
+      <summary>コンテンツセクション（追加・削除・並べ替え自由）</summary>
+      <div class="sec-body">
+        <p class="hint">見出し・英字ラベルは自由に変更できます。形式：「リスト」は1行ずつの箇条書き、「カード」はバッジ・説明・画像付きのカード表示。画像URLは空欄でもOK（文字だけのカードになります）。</p>
+        <div id="sections"></div>
+        <button class="add-btn" id="add-section">＋ セクションを追加</button>
+      </div>
+    </details>
+
+    <details>
+      <summary>注意事項・リンク</summary>
+      <div class="sec-body">
+        <div class="field">
+          <label>注意事項（1行＝1項目）</label>
+          <textarea id="f-notes" rows="3">雨天の場合、試合は延期となります。
+イベント内容は予告なく変更となる場合があります。
+駐車場の混雑が予想されます。公共交通機関のご利用をおすすめします。</textarea>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label><input type="checkbox" id="f-live-show" checked style="width:auto"> YouTube配信バンドを表示</label>
+            <input type="url" id="f-youtube" value="https://www.youtube.com/" placeholder="配信ページURL">
+          </div>
+          <div class="field">
+            <label>配信サムネ画像URL<span class="opt">空欄なら画像なし</span></label>
+            <input type="url" id="f-live-thumb" placeholder="https://...（横長 640×360前後）">
+          </div>
+        </div>
+        <div class="field">
+          <label>チケットページURL</label>
+          <input type="url" id="f-ticket-url" value="https://www.m-pirates.jp/ticket">
+        </div>
+      </div>
+    </details>
+
+    <details>
+      <summary>SNSリンク（初回に設定すれば以後そのまま）</summary>
+      <div class="sec-body">
+        <div class="grid2">
+          <div class="field"><label>Instagram</label><input type="url" id="f-sns-ig" value="https://www.instagram.com/"></div>
+          <div class="field"><label>YouTube</label><input type="url" id="f-sns-yt" value="https://www.youtube.com/"></div>
+          <div class="field"><label>X（旧Twitter）</label><input type="url" id="f-sns-x" value="https://x.com/"></div>
+          <div class="field"><label>LINE</label><input type="url" id="f-sns-line" value="https://line.me/"></div>
+        </div>
+      </div>
+    </details>
+
+  </div>
+
+  <!-- ===================== プレビュー ===================== -->
+  <div class="preview-pane">
+    <div class="preview-head">
+      プレビュー（自動更新）
+      <span class="pv-toggle">
+        <button id="pv-pc" class="on">PC</button>
+        <button id="pv-sp">スマホ</button>
+      </span>
+    </div>
+    <div id="pv-frame-box"><iframe id="pv" title="プレビュー"></iframe></div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   マンパイ試合情報ページ ビルダー
+   フォーム入力 → HTML生成（テンプレートは game-info.html と同一デザイン）
+================================================================ */
+
+/* ---- 球場マスタ（住所・アクセスの自動入力） ---- */
+const STADIUMS = {
+  '坊っちゃんスタジアム':        { addr: '松山市市坪西町625番地1', access: 'JR市坪駅から徒歩2分' },
+  'マドンナスタジアム':          { addr: '松山市市坪西町625番地1', access: 'JR市坪駅から徒歩2分' },
+  '今治市営球場':                { addr: '', access: '' },
+  '新居浜市営野球場':            { addr: '', access: '' },
+  '宇和島市丸山公園野球場':      { addr: '', access: '' },
+  '八幡浜・大洲地区運動公園野球場': { addr: '', access: '' },
+  '上島町いきなスポレク公園野球場': { addr: '', access: '' }
+};
+
+/* ---- 対戦相手マスタ（英字表記の自動入力） ---- */
+const OPPONENTS = {
+  '香川オリーブガイナーズ': 'KAGAWA OLIVE GUYNERS',
+  '徳島インディゴソックス': 'TOKUSHIMA INDIGO SOCKS',
+  '高知ファイティングドッグス': 'KOCHI FIGHTING DOGS',
+  '読売ジャイアンツ（三軍）': 'YOMIURI GIANTS',
+  'ロッテ・ジャイアンツ': 'LOTTE GIANTS'
+};
+
+/* ---- コンテンツセクションの初期セット ---- */
+const SECTION_DEFAULTS = [
+  { title: 'オープニングアクト', en: 'Opening Act', intro: '', layout: 'list', items: [
+    { title: '〇〇高校 吹奏楽部によるオープニング演奏' }
+  ]},
+  { title: 'オープニングセレモニー', en: 'Ceremony', intro: '', layout: 'list', items: [
+    { title: '国歌斉唱：〇〇 〇〇さん' },
+    { title: '始球式：〇〇市立〇〇中学校 野球部主将' },
+    { title: 'ご挨拶：〇〇市長 〇〇 〇〇 様' }
+  ]},
+  { title: '来場者プレゼント', en: 'Present', intro: '', layout: 'cards', items: [
+    { badge: '先着400名様', title: 'オリジナル選手カード', desc: 'ご来場のみなさまに入場口でお配りします。', img: '' },
+    { badge: '先着500名様', title: 'マフラータオル', desc: '応援デー限定デザイン。夏の観戦のお供にどうぞ！', img: '' }
+  ]},
+  { title: 'スタジアムイベント', en: 'Stadium Event', intro: '試合の合間もお楽しみが盛りだくさん！', layout: 'cards', items: [
+    { badge: 'イニング間', title: '愛媛の特産品が当たる抽選会', desc: '抽選で50名様に愛媛の特産品が当たります！', img: '' },
+    { badge: '3回裏終了後', title: '地元チアダンサーによるダンスパフォーマンス', desc: 'グラウンドで華やかなステージをお届け！', img: '' },
+    { badge: '5回裏終了後', title: 'じゃこ天＆お菓子まき', desc: 'スタンドに向けて愛媛名物じゃこ天とお菓子をまきます！', img: '' }
+  ]},
+  { title: 'マンパイパーク開園！', en: 'Event', intro: '試合当日は球場前広場に「マンパイパーク」が登場。ご家族そろってお楽しみいただけます。', layout: 'cards', items: [
+    { badge: '縁日コーナー', title: 'ガラポン抽選 ほか（各100円）', desc: 'お子さま向けの縁日あそびが大集合。', img: '' },
+    { badge: 'グルメエリア', title: 'キッチンカーが大集合', desc: 'ご当地グルメとスタジアムメシを味わえます。', img: '' },
+    { badge: '野球体験', title: 'スピードガン・ストラックアウト（100円）', desc: '選手気分で挑戦してみよう！', img: '' },
+    { badge: '展示', title: '選手イラストパネル展示', desc: '全選手のイラストパネルがずらり。推し選手と記念撮影！', img: '' }
+  ]},
+  { title: 'グッズ情報', en: 'Goods', intro: '', layout: 'list', items: [
+    { title: '2026年新グッズ12種類（300円〜6,000円）を球場売店で販売中' },
+    { title: '受注生産「応援タオル」受付中（締切：〇月〇日）' }
+  ]}
+];
+
+const STORAGE_KEY = 'mpirates-builder-v2';
+
+/* ---- ティッカー（電光掲示板）の文言 ---- */
+const TICKER_TEXT = 'GO! GO! MANDARIN PIRATES! ⚾ <b>突覇 〜最後まで諦めない〜</b> 🍊 EHIME MANDARIN PIRATES 2026';
+
+/* ================================================================
+   テンプレートCSS（game-info.html と同一。デザイン変更はここを修正）
+================================================================ */
+const TEMPLATE_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Noto+Sans+JP:wght@400;500;700;900&family=M+PLUS+Rounded+1c:wght@700;800&display=swap');
+
+  .mp-game {
+    --mp-orange: #ff7719;
+    --mp-orange-dark: #ea6000;
+    --mp-orange-light: #ffa14a;
+    --mp-navy: #101c33;
+    --mp-navy-light: #1d2f52;
+    --mp-white: #ffffff;
+    --mp-cream: #fff6ec;
+    --mp-cream-line: #ffe3cd;
+    --mp-yellow: #ffd54f;
+    --mp-text: #22293a;
+    --mp-text-sub: #6b7280;
+    --mp-font-rounded: 'M PLUS Rounded 1c', 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+  }
+  .mp-game {
+    font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif;
+    color: var(--mp-text);
+    line-height: 1.8;
+    background: var(--mp-white);
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .mp-game *, .mp-game *::before, .mp-game *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  .mp-game img { max-width: 100%; display: block; }
+  .mp-game a { text-decoration: none; }
+  .mp-game .mp-en {
+    font-family: 'Oswald', 'Arial Black', Impact, sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  @keyframes mpgFadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+  @keyframes mpgFadeUpSkew { from { opacity: 0; transform: translateY(20px) skewX(-8deg); } to { opacity: 1; transform: skewX(-8deg); } }
+  @keyframes mpgStripes { from { background-position: 0 0; } to { background-position: 340px 0; } }
+  @keyframes mpgShine { from { background-position: 220% 0; } to { background-position: -20% 0; } }
+  @keyframes mpgFloat { from { transform: translateY(0) rotate(-6deg); } to { transform: translateY(-16px) rotate(8deg); } }
+  @keyframes mpgPulse {
+    0%, 100% { transform: scale(1); text-shadow: 0 0 12px rgba(255, 255, 255, 0.55); }
+    50%      { transform: scale(1.12); text-shadow: 0 0 24px rgba(255, 255, 255, 0.95); }
+  }
+  @keyframes mpgGlowOrange {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 119, 25, 0.55); }
+    50%      { box-shadow: 0 0 0 12px rgba(255, 119, 25, 0); }
+  }
+  @keyframes mpgGlowWhite {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.6); }
+    50%      { box-shadow: 0 0 0 12px rgba(255, 255, 255, 0); }
+  }
+  @keyframes mpgGlowRed {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.55); }
+    50%      { box-shadow: 0 0 0 12px rgba(229, 57, 53, 0); }
+  }
+  @keyframes mpgBlink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: 0.25; } }
+  @keyframes mpgBob { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+  @keyframes mpgSwing { from { transform: rotate(-2deg); } to { transform: rotate(2deg); } }
+  @keyframes mpgHaloPulse { 0%, 100% { opacity: 0.55; transform: scale(1); } 50% { opacity: 0.9; transform: scale(1.15); } }
+  @keyframes mpgRotate { to { transform: rotate(360deg); } }
+  @keyframes mpgFall {
+    from { transform: translateY(-40px) rotate(0deg); opacity: 0.9; }
+    to   { transform: translateY(620px) rotate(540deg); opacity: 0; }
+  }
+  @keyframes mpgTicker { to { transform: translateX(-50%); } }
+  @keyframes mpgSheen {
+    0%        { transform: translateX(-160%) skewX(-20deg); }
+    55%, 100% { transform: translateX(320%) skewX(-20deg); }
+  }
+  @keyframes mpgGradShift { to { background-position: 300% 0; } }
+
+  .mpg-hero {
+    position: relative;
+    background: linear-gradient(135deg, var(--mp-orange-light) 0%, var(--mp-orange) 50%, #ff8f35 100%);
+    border-radius: 20px;
+    padding: 44px 28px 40px;
+    overflow: hidden;
+    color: var(--mp-white);
+    text-align: center;
+    isolation: isolate;
+  }
+  .mpg-hero::before {
+    content: "";
+    position: absolute;
+    top: -60%; left: -14%;
+    width: 36%; height: 220%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.08) 100%);
+    transform: skewX(-18deg);
+    clip-path: polygon(0 0, 34% 0, 12% 100%, 0 100%);
+  }
+  .mpg-hero::after {
+    content: "";
+    position: absolute;
+    top: -60%; right: -14%;
+    width: 36%; height: 220%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.08) 100%);
+    transform: skewX(-18deg);
+    clip-path: polygon(66% 0, 100% 0, 100% 100%, 88% 100%);
+  }
+  .mpg-hero > * { position: relative; z-index: 1; }
+  .mpg-hero-rays {
+    position: absolute;
+    z-index: 0;
+    top: 50%; left: 50%;
+    width: 1200px; height: 1200px;
+    margin: -600px 0 0 -600px;
+    background: repeating-conic-gradient(from 0deg,
+      rgba(255, 255, 255, 0.20) 0deg 5deg, transparent 5deg 14deg);
+    animation: mpgRotate 60s linear infinite;
+    -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 62%);
+    mask-image: radial-gradient(circle, #000 0%, transparent 62%);
+  }
+  .mpg-hero-stripes {
+    position: absolute; inset: 0; z-index: 0;
+    background: repeating-linear-gradient(115deg, rgba(255,255,255,0.07) 0 14px, transparent 14px 34px);
+    animation: mpgStripes 16s linear infinite;
+  }
+  .mpg-hero-glow {
+    position: absolute; z-index: 0;
+    top: -140px; left: 50%;
+    width: 480px; height: 480px; margin-left: -240px;
+    background: radial-gradient(circle, rgba(255, 236, 170, 0.55) 0%, transparent 65%);
+    animation: mpgHaloPulse 5s ease-in-out infinite;
+  }
+  .mpg-confetti { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+  .mpg-confetti i {
+    position: absolute;
+    top: -40px;
+    width: 8px; height: 13px;
+    border-radius: 2px;
+    background: #ffffff;
+    opacity: 0.85;
+    animation: mpgFall 5.5s linear infinite;
+  }
+  .mpg-confetti i:nth-child(1)  { left: 6%;  animation-delay: 0s;    background: var(--mp-yellow); }
+  .mpg-confetti i:nth-child(2)  { left: 16%; animation-delay: -2.1s; width: 6px; height: 6px; border-radius: 50%; }
+  .mpg-confetti i:nth-child(3)  { left: 26%; animation-delay: -3.8s; animation-duration: 6.4s; background: var(--mp-navy-light); }
+  .mpg-confetti i:nth-child(4)  { left: 38%; animation-delay: -1.2s; background: var(--mp-yellow); animation-duration: 4.8s; }
+  .mpg-confetti i:nth-child(5)  { left: 50%; animation-delay: -4.6s; width: 6px; height: 6px; border-radius: 50%; }
+  .mpg-confetti i:nth-child(6)  { left: 62%; animation-delay: -0.6s; animation-duration: 6s; background: var(--mp-navy-light); }
+  .mpg-confetti i:nth-child(7)  { left: 72%; animation-delay: -3.1s; background: var(--mp-yellow); }
+  .mpg-confetti i:nth-child(8)  { left: 82%; animation-delay: -1.8s; width: 6px; height: 6px; border-radius: 50%; animation-duration: 4.6s; }
+  .mpg-confetti i:nth-child(9)  { left: 90%; animation-delay: -4.2s; animation-duration: 6.2s; background: var(--mp-navy-light); }
+  .mpg-confetti i:nth-child(10) { left: 96%; animation-delay: -2.7s; background: var(--mp-yellow); }
+  .mpg-fx {
+    position: absolute; z-index: 0;
+    font-size: 22px; opacity: 0.55;
+    animation: mpgFloat 4.5s ease-in-out infinite alternate;
+  }
+  .mpg-fx:nth-of-type(1) { top: 14%; left: 7%;  animation-delay: 0s;    font-size: 26px; }
+  .mpg-fx:nth-of-type(2) { top: 62%; left: 13%; animation-delay: -1.2s; font-size: 18px; }
+  .mpg-fx:nth-of-type(3) { top: 20%; right: 9%; animation-delay: -2.1s; font-size: 20px; }
+  .mpg-fx:nth-of-type(4) { top: 68%; right: 14%; animation-delay: -3s;  font-size: 24px; }
+  .mpg-fx:nth-of-type(5) { top: 8%;  left: 46%; animation-delay: -1.8s; font-size: 16px; }
+  .mpg-fx:nth-of-type(6) { top: 78%; left: 44%; animation-delay: -0.6s; font-size: 18px; }
+
+  .mpg-hero-eyebrow { animation: mpgFadeUpSkew 0.6s 0.05s ease both; }
+  .mpg-day-badge    { animation: mpgFadeUp 0.6s 0.15s ease both, mpgSwing 2.6s 1.2s ease-in-out infinite alternate; }
+  .mpg-hero-date    { animation: mpgFadeUp 0.6s 0.25s ease both, mpgShine 4.5s 1s linear infinite; }
+  .mpg-mascots      { animation: mpgFadeUp 0.6s 0.33s ease both; }
+  .mpg-vs           { animation: mpgFadeUp 0.6s 0.42s ease both; }
+  .mpg-hero-venue   { animation: mpgFadeUp 0.6s 0.5s ease both; }
+  .mpg-hero-time    { animation: mpgFadeUp 0.6s 0.58s ease both; }
+
+  .mpg-hero-eyebrow {
+    display: inline-block;
+    padding: 6px 22px;
+    background: var(--mp-white);
+    color: var(--mp-orange-dark);
+    font-size: 13px;
+    letter-spacing: 0.2em;
+    border-radius: 4px;
+    transform: skewX(-8deg);
+    box-shadow: 0 4px 14px rgba(16, 28, 51, 0.18);
+  }
+  .mpg-day-badge {
+    display: block;
+    width: fit-content;
+    margin: 14px auto 0;
+    padding: 6px 22px;
+    background: var(--mp-white);
+    color: var(--mp-navy);
+    font-family: var(--mp-font-rounded);
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%);
+  }
+  .mpg-hero-date {
+    margin-top: 14px;
+    font-size: clamp(58px, 11vw, 104px);
+    font-style: italic;
+    line-height: 1.05;
+    background: linear-gradient(110deg, #ffffff 38%, #fff3c4 47%, var(--mp-yellow) 53%, #ffffff 62%);
+    background-size: 240% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .mpg-mascots {
+    margin-top: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 22px;
+  }
+  .mpg-mascot {
+    width: clamp(84px, 16%, 130px);
+    animation: mpgBob 1.6s ease-in-out infinite alternate;
+    filter: drop-shadow(0 6px 12px rgba(120, 50, 0, 0.28));
+  }
+  .mpg-mascot:nth-child(2) { animation-delay: -0.8s; }
+  .mpg-mascot img { width: 100%; }
+  .mpg-bubble {
+    display: block;
+    margin: 0 auto 6px;
+    padding: 5px 12px;
+    background: var(--mp-white);
+    color: var(--mp-navy);
+    font-family: var(--mp-font-rounded);
+    font-size: 11.5px;
+    font-weight: 800;
+    border-radius: 999px;
+    white-space: nowrap;
+    position: relative;
+    width: fit-content;
+  }
+  .mpg-bubble::after {
+    content: "";
+    position: absolute;
+    bottom: -5px; left: 50%; margin-left: -5px;
+    border-width: 5px 5px 0;
+    border-style: solid;
+    border-color: var(--mp-white) transparent transparent;
+  }
+
+  .mpg-vs {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .mpg-team {
+    font-family: var(--mp-font-rounded);
+    font-size: clamp(17px, 3vw, 24px);
+    font-weight: 800;
+    line-height: 1.4;
+  }
+  .mpg-team small {
+    display: block;
+    font-family: 'Oswald', 'Arial Black', Impact, sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    color: rgba(255, 255, 255, 0.8);
+  }
+  .mpg-vs-mark {
+    font-family: 'Oswald', 'Arial Black', Impact, sans-serif;
+    font-weight: 600;
+    font-size: clamp(28px, 5vw, 44px);
+    font-style: italic;
+    color: var(--mp-navy);
+    line-height: 1;
+    display: inline-block;
+    animation: mpgPulse 2.2s ease-in-out infinite;
+  }
+  .mpg-hero-venue { margin-top: 14px; font-size: 15px; font-weight: 700; letter-spacing: 0.06em; }
+  .mpg-hero-time {
+    margin-top: 12px;
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+  }
+  .mpg-time-chip {
+    padding: 6px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.14);
+  }
+  .mpg-time-chip strong {
+    font-family: 'Oswald', 'Arial Black', Impact, sans-serif;
+    font-weight: 600;
+    font-size: 1.2em;
+    letter-spacing: 0.05em;
+    color: var(--mp-white);
+    margin-left: 6px;
+  }
+  .mpg-time-chip--start {
+    background: var(--mp-yellow);
+    border-color: var(--mp-yellow);
+    color: var(--mp-navy);
+    font-size: 16px;
+    padding: 9px 26px;
+    animation: mpgGlowWhite 2.4s ease-out infinite;
+  }
+  .mpg-time-chip--start strong { color: var(--mp-orange-dark); font-size: 1.35em; }
+  .mpg-time-chip--fill {
+    background: var(--mp-navy);
+    border-color: var(--mp-navy);
+  }
+  .mpg-time-chip--fill strong { color: var(--mp-yellow); }
+
+  .mpg-ticker {
+    margin-top: 12px;
+    background: var(--mp-yellow);
+    border-radius: 12px;
+    overflow: hidden;
+    padding: 9px 0;
+  }
+  .mpg-ticker-track {
+    display: inline-flex;
+    white-space: nowrap;
+    animation: mpgTicker 16s linear infinite;
+  }
+  .mpg-ticker-track span {
+    font-family: 'Oswald', 'Arial Black', Impact, sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--mp-navy);
+    font-size: 14px;
+    padding-right: 48px;
+  }
+  .mpg-ticker-track span b { color: var(--mp-orange-dark); font-weight: 600; }
+
+  .mpg-poster {
+    margin-top: 20px;
+    padding: 5px;
+    border-radius: 15px;
+    background: linear-gradient(120deg,
+      var(--mp-orange), var(--mp-yellow), var(--mp-orange-dark), var(--mp-orange));
+    background-size: 300% 100%;
+    animation: mpgGradShift 6s linear infinite alternate;
+  }
+  .mpg-poster img { width: 100%; border-radius: 11px; }
+
+  .mpg-table { width: 100%; margin-top: 28px; border-collapse: collapse; font-size: 14.5px; }
+  .mpg-table th, .mpg-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--mp-cream-line);
+    text-align: left;
+    vertical-align: top;
+  }
+  .mpg-table th {
+    width: 130px;
+    background: var(--mp-cream);
+    color: var(--mp-navy);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .mpg-table td strong { color: var(--mp-orange-dark); }
+
+  .mpg-section { margin-top: 44px; }
+  .mpg-sec-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 0 10px;
+    line-height: 1.3;
+    border-bottom: 3px solid;
+    border-image: linear-gradient(90deg, var(--mp-orange), var(--mp-yellow) 45%, transparent 75%) 1;
+  }
+  .mpg-sec-title .ja {
+    font-family: var(--mp-font-rounded);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--mp-navy);
+  }
+  .mpg-sec-title .en {
+    order: -1;
+    font-family: 'Oswald', 'Arial Black', Impact, sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    color: var(--mp-white);
+    background: linear-gradient(120deg, var(--mp-orange), var(--mp-orange-dark));
+    padding: 4px 14px;
+    transform: skewX(-12deg);
+    text-transform: uppercase;
+  }
+  .mpg-section > p { margin-top: 14px; font-size: 14.5px; }
+
+  .mpg-list { margin-top: 14px; list-style: none; }
+  .mpg-list li {
+    position: relative;
+    padding: 10px 0 10px 26px;
+    border-bottom: 1px dashed var(--mp-cream-line);
+    font-size: 14.5px;
+  }
+  .mpg-list li::before {
+    content: "";
+    position: absolute;
+    left: 4px; top: 19px;
+    width: 10px; height: 10px;
+    background: linear-gradient(135deg, var(--mp-orange), var(--mp-yellow));
+    transform: rotate(45deg);
+  }
+
+  .mpg-cards {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .mpg-mini {
+    position: relative;
+    background: var(--mp-white);
+    border: 1px solid var(--mp-cream-line);
+    border-radius: 14px;
+    padding: 20px 16px 16px;
+    box-shadow: 0 3px 12px rgba(255, 119, 25, 0.10);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    overflow: hidden;
+  }
+  .mpg-mini::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--mp-orange), var(--mp-yellow));
+    z-index: 1;
+  }
+  .mpg-mini:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(255, 119, 25, 0.20); }
+  .mpg-mini-photo { margin: -20px -16px 12px; overflow: hidden; }
+  .mpg-mini-photo img {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+  .mpg-mini:hover .mpg-mini-photo img { transform: scale(1.05); }
+  .mpg-mini-badge {
+    display: inline-block;
+    padding: 3px 14px;
+    background: var(--mp-navy);
+    color: var(--mp-white);
+    font-family: var(--mp-font-rounded);
+    font-size: 11px;
+    font-weight: 800;
+    border-radius: 999px;
+    letter-spacing: 0.08em;
+  }
+  .mpg-mini-badge--orange { background: linear-gradient(120deg, var(--mp-orange), var(--mp-orange-dark)); }
+  .mpg-mini h4 {
+    margin-top: 8px;
+    font-family: var(--mp-font-rounded);
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--mp-navy);
+    line-height: 1.5;
+  }
+  .mpg-mini p { margin-top: 6px; font-size: 12.5px; color: var(--mp-text-sub); }
+
+  .mpg-live {
+    margin-top: 44px;
+    background:
+      repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.04) 0 12px, transparent 12px 30px),
+      linear-gradient(115deg, var(--mp-navy) 0%, var(--mp-navy-light) 100%);
+    border-radius: 16px;
+    padding: 26px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+    color: var(--mp-white);
+  }
+  .mpg-live-thumb {
+    width: 220px;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+  .mpg-live-label { display: flex; align-items: center; gap: 14px; }
+  .mpg-live-play {
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    background: #e53935;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: var(--mp-white);
+    flex-shrink: 0;
+    animation: mpgGlowRed 2s ease-out infinite;
+  }
+  .mpg-live-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    margin-right: 6px;
+    background: #e53935;
+    color: var(--mp-white);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    border-radius: 4px;
+    vertical-align: 2px;
+    animation: mpgBlink 1.4s steps(1) infinite;
+  }
+  .mpg-live-label strong { font-family: var(--mp-font-rounded); font-weight: 800; font-size: 17px; display: block; }
+  .mpg-live-label span { font-size: 12.5px; color: #9fb0d0; }
+
+  .mpg-btn {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+    padding: 12px 28px;
+    border-radius: 999px;
+    background: linear-gradient(120deg, var(--mp-orange), var(--mp-orange-dark));
+    color: var(--mp-white);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .mpg-btn::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 40%;
+    background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+    transform: translateX(-160%) skewX(-20deg);
+    animation: mpgSheen 3.2s ease-in-out infinite;
+  }
+  .mpg-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255, 119, 25, 0.4); }
+  .mpg-btn--glow { animation: mpgGlowOrange 2.4s ease-out infinite; }
+  .mpg-btn--outline {
+    background: transparent;
+    border: 2px solid var(--mp-navy);
+    color: var(--mp-navy);
+  }
+  .mpg-btn--outline::before { display: none; }
+  .mpg-btn--outline:hover { background: var(--mp-navy); color: var(--mp-white); box-shadow: none; }
+
+  .mpg-access {
+    margin-top: 16px;
+    background: var(--mp-cream);
+    border: 1px solid var(--mp-cream-line);
+    border-radius: 14px;
+    padding: 22px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .mpg-access-photo {
+    width: 220px;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+  .mpg-access-info strong { display: block; font-size: 16px; color: var(--mp-navy); }
+  .mpg-access-info span { display: block; margin-top: 4px; font-size: 13.5px; color: var(--mp-text-sub); }
+
+  .mpg-notes {
+    margin-top: 44px;
+    background: #fff8f0;
+    border-left: 5px solid var(--mp-orange);
+    border-radius: 0 14px 14px 0;
+    padding: 22px 24px;
+  }
+  .mpg-notes h3 {
+    font-family: var(--mp-font-rounded);
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--mp-navy);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mpg-notes ul { margin-top: 10px; list-style: none; }
+  .mpg-notes li { position: relative; padding: 4px 0 4px 20px; font-size: 13.5px; color: var(--mp-text); }
+  .mpg-notes li::before { content: "※"; position: absolute; left: 0; color: var(--mp-orange-dark); }
+
+  .mpg-cta { margin-top: 36px; display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+
+  .mpg-sns {
+    margin-top: 44px;
+    text-align: center;
+    background: var(--mp-cream);
+    border: 1px solid var(--mp-cream-line);
+    border-radius: 16px;
+    padding: 28px 24px;
+  }
+  .mpg-sns h3 {
+    font-family: var(--mp-font-rounded);
+    color: var(--mp-navy);
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+  }
+  .mpg-sns p { margin-top: 6px; font-size: 12.5px; color: var(--mp-text-sub); }
+  .mpg-sns-btns { margin-top: 16px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+  .mpg-sns-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 20px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--mp-white);
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+  .mpg-sns-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+  .mpg-sns-btn--x { background: #000000; }
+  .mpg-sns-btn--ig { background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af); }
+  .mpg-sns-btn--yt { background: #e53935; }
+  .mpg-sns-btn--line { background: #06c755; }
+
+  @media (max-width: 640px) {
+    .mpg-hero { padding: 32px 18px 34px; border-radius: 14px; }
+    .mpg-fx { font-size: 15px !important; }
+    .mpg-mascot { width: 74px; }
+    .mpg-mascots { gap: 14px; }
+    .mpg-bubble { font-size: 10px; padding: 4px 9px; }
+    .mpg-ticker-track span { font-size: 12px; }
+    .mpg-table th { width: 96px; padding: 12px 10px; font-size: 13px; }
+    .mpg-table td { padding: 12px 10px; font-size: 13.5px; }
+    .mpg-sec-title .ja { font-size: 18px; }
+    .mpg-live { justify-content: center; text-align: center; }
+    .mpg-live-label { flex-direction: column; }
+    .mpg-live-thumb { width: 100%; }
+    .mpg-access { justify-content: center; text-align: center; }
+    .mpg-access-photo { width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mp-game *, .mp-game *::before, .mp-game *::after { animation: none !important; transition: none !important; }
+    .mpg-hero-date { color: var(--mp-white); background: none; }
+  }
+`;
+
+/* ================================================================
+   ユーティリティ
+================================================================ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '')
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const lines = s => String(s ?? '').split('\n').map(l => l.trim()).filter(Boolean);
+
+const WEEK_EN = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+const WEEK_JA = ['日', '月', '火', '水', '木', '金', '土'];
+function parseDate(v) {
+  if (!v) return null;
+  const [y, m, d] = v.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  const dt = new Date(y, m - 1, d);
+  return { y, m, d, en: WEEK_EN[dt.getDay()], ja: WEEK_JA[dt.getDay()] };
+}
+/* 金額・「無料」を自動で強調 */
+const boldTicket = s => esc(s).replace(/(\d[\d,]*円（税込）|\d[\d,]*円|無料)/g, '<strong>$1</strong>');
+
+/* ================================================================
+   コンテンツセクションの編集UI
+================================================================ */
+function addItemRow(rowsBox, data = {}) {
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.innerHTML =
+    '<button type="button" class="del" title="削除">✕</button>' +
+    '<input type="text" data-k="title" placeholder="内容・タイトル" value="' + esc(data.title || '') + '">' +
+    '<input type="text" data-k="badge" placeholder="バッジ（例：先着400名様／3回裏終了後）" value="' + esc(data.badge || '') + '">' +
+    '<input type="text" data-k="desc" placeholder="説明文（任意）" value="' + esc(data.desc || '') + '">' +
+    '<input type="url" data-k="img" placeholder="画像URL（任意） https://..." value="' + esc(data.img || '') + '">';
+  row.querySelector('.del').addEventListener('click', () => { row.remove(); refresh(); });
+  rowsBox.appendChild(row);
+}
+
+function addSection(data = {}) {
+  const box = document.createElement('div');
+  box.className = 'sec-box';
+  box.dataset.layout = data.layout === 'list' ? 'list' : 'cards';
+  box.innerHTML =
+    '<div class="sec-head">' +
+      '<input type="text" data-s="title" placeholder="見出し" value="' + esc(data.title || '') + '">' +
+      '<input type="text" data-s="en" placeholder="英字ラベル" value="' + esc(data.en || '') + '">' +
+      '<select data-s="layout">' +
+        '<option value="list"' + (box.dataset.layout === 'list' ? ' selected' : '') + '>リスト</option>' +
+        '<option value="cards"' + (box.dataset.layout === 'cards' ? ' selected' : '') + '>カード</option>' +
+      '</select>' +
+      '<button type="button" class="mv" data-mv="-1" title="上へ">↑</button>' +
+      '<button type="button" class="mv" data-mv="1" title="下へ">↓</button>' +
+      '<button type="button" class="secdel" title="セクションを削除">✕</button>' +
+    '</div>' +
+    '<input type="text" data-s="intro" placeholder="紹介文（任意）" value="' + esc(data.intro || '') + '">' +
+    '<div class="rows sec-rows"></div>' +
+    '<button type="button" class="add-btn add-item">＋ 項目を追加</button>';
+
+  const rowsBox = box.querySelector('.sec-rows');
+  (data.items || []).forEach(it => addItemRow(rowsBox, it));
+
+  box.querySelector('[data-s="layout"]').addEventListener('change', e => {
+    box.dataset.layout = e.target.value;
+  });
+  box.querySelectorAll('.mv').forEach(b => b.addEventListener('click', () => {
+    const dir = Number(b.dataset.mv);
+    const parent = box.parentElement;
+    if (dir < 0 && box.previousElementSibling) parent.insertBefore(box, box.previousElementSibling);
+    if (dir > 0 && box.nextElementSibling) parent.insertBefore(box.nextElementSibling, box);
+    refresh();
+  }));
+  box.querySelector('.secdel').addEventListener('click', () => {
+    if (confirm('このセクションを削除しますか？')) { box.remove(); refresh(); }
+  });
+  box.querySelector('.add-item').addEventListener('click', () => { addItemRow(rowsBox); refresh(); });
+
+  $('sections').appendChild(box);
+}
+
+function readSections() {
+  return [...document.querySelectorAll('#sections .sec-box')].map(box => ({
+    title: box.querySelector('[data-s="title"]').value.trim(),
+    en: box.querySelector('[data-s="en"]').value.trim(),
+    intro: box.querySelector('[data-s="intro"]').value.trim(),
+    layout: box.querySelector('[data-s="layout"]').value,
+    items: [...box.querySelectorAll('.sec-rows .row')].map(row => {
+      const o = {};
+      row.querySelectorAll('[data-k]').forEach(i => { o[i.dataset.k] = i.value.trim(); });
+      return o;
+    }).filter(o => Object.values(o).some(v => v))
+  })).filter(s => s.title || s.intro || s.items.length);
+}
+
+function fillSections(arr) {
+  $('sections').innerHTML = '';
+  arr.forEach(addSection);
+}
+
+/* ================================================================
+   フォーム → 状態オブジェクト
+================================================================ */
+function collect() {
+  const oppSel = $('f-opponent').value;
+  const stSel = $('f-stadium').value;
+  return {
+    date: $('f-date').value,
+    eyebrow: $('f-eyebrow').value.trim(),
+    dayBadge: $('f-daybadge').value.trim(),
+    oppSel,
+    oppName: oppSel === '__other' ? $('f-opp-name').value.trim() : oppSel,
+    oppEn: oppSel === '__other' ? $('f-opp-en').value.trim() : (OPPONENTS[oppSel] || ''),
+    league: $('f-league').value.trim(),
+    stSel,
+    stadium: stSel === '__other' ? $('f-stadium-name').value.trim() : stSel,
+    addr: $('f-addr').value.trim(),
+    access: $('f-access').value.trim(),
+    open: $('f-open').value,
+    start: $('f-start').value,
+    chip: $('f-chip').value.trim(),
+    ticket: $('f-ticket').value.trim(),
+    poster: $('f-poster').value.trim(),
+    stadiumImg: $('f-stadium-img').value.trim(),
+    mascotL: $('f-mascot-l').value.trim(),
+    mascotR: $('f-mascot-r').value.trim(),
+    bubble: $('f-bubble').value.trim(),
+    bubbleSide: $('f-bubble-side').value,
+    sections: readSections(),
+    notes: $('f-notes').value,
+    liveShow: $('f-live-show').checked,
+    liveThumb: $('f-live-thumb').value.trim(),
+    youtube: $('f-youtube').value.trim(),
+    ticketUrl: $('f-ticket-url').value.trim(),
+    snsX: $('f-sns-x').value.trim(),
+    snsIg: $('f-sns-ig').value.trim(),
+    snsYt: $('f-sns-yt').value.trim(),
+    snsLine: $('f-sns-line').value.trim()
+  };
+}
+
+/* ================================================================
+   状態 → HTML生成
+================================================================ */
+function buildBody(S) {
+  const dt = parseDate(S.date);
+  const heroDate = dt ? `${dt.m}.${dt.d} <small>${dt.en}</small>` : '-.-';
+  const longDate = dt ? `${dt.y}年${dt.m}月${dt.d}日（${dt.ja}）` : '';
+  const venueParen = S.addr ? `（${esc(S.addr)}）` : '';
+  const mapUrl = 'https://maps.google.com/?q=' + encodeURIComponent(S.stadium || '');
+  /* 「先着」を含むバッジはオレンジ、それ以外はネイビー */
+  const badgeCls = b => 'mpg-mini-badge' + (b.includes('先着') ? ' mpg-mini-badge--orange' : '');
+  const minicard = r => `
+      <div class="mpg-mini">
+        ${r.img ? `<div class="mpg-mini-photo"><img src="${esc(r.img)}" alt="${esc(r.title || '')}"></div>` : ''}
+        ${r.badge ? `<span class="${badgeCls(r.badge)}">${esc(r.badge)}</span>` : ''}
+        ${r.title ? `<h4>${esc(r.title)}</h4>` : ''}
+        ${r.desc ? `<p>${esc(r.desc)}</p>` : ''}
+      </div>`;
+
+  /* マスコット（チーム名の上・吹き出しは選択した側に） */
+  let leftBubble = '', rightBubble = '';
+  if (S.bubble) {
+    const b = `<span class="mpg-bubble">${esc(S.bubble)}</span>`;
+    if (S.bubbleSide === 'right' && S.mascotR) rightBubble = b;
+    else if (S.bubbleSide !== 'right' && S.mascotL) leftBubble = b;
+    else if (S.mascotL) leftBubble = b;
+    else if (S.mascotR) rightBubble = b;
+  }
+  const mascots = (S.mascotL || S.mascotR) ? `
+    <div class="mpg-mascots">
+      ${S.mascotL ? `<div class="mpg-mascot">${leftBubble}<img src="${esc(S.mascotL)}" alt="マスコット"></div>` : ''}
+      ${S.mascotR ? `<div class="mpg-mascot">${rightBubble}<img src="${esc(S.mascotR)}" alt="マスコット"></div>` : ''}
+    </div>` : '';
+
+  let h = '';
+
+  /* ---- ヒーロー ---- */
+  h += `
+  <section class="mpg-hero">
+    <div class="mpg-hero-rays"></div>
+    <div class="mpg-hero-stripes"></div>
+    <div class="mpg-hero-glow"></div>
+    <div class="mpg-confetti"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <span class="mpg-fx">⚾</span>
+    <span class="mpg-fx">🍊</span>
+    <span class="mpg-fx">🍊</span>
+    <span class="mpg-fx">⚾</span>
+    <span class="mpg-fx">✨</span>
+    <span class="mpg-fx">🍊</span>
+
+    <span class="mpg-hero-eyebrow mp-en">${esc(S.eyebrow || 'HOME GAME')}</span>
+    ${S.dayBadge ? `<span class="mpg-day-badge">${esc(S.dayBadge)}</span>` : ''}
+    <div class="mpg-hero-date mp-en">${heroDate}</div>
+    ${mascots}
+    <div class="mpg-vs">
+      <div class="mpg-team">愛媛マンダリンパイレーツ<small>EHIME MANDARIN PIRATES</small></div>
+      <span class="mpg-vs-mark">VS</span>
+      <div class="mpg-team">${esc(S.oppName)}${S.oppEn ? `<small>${esc(S.oppEn)}</small>` : ''}</div>
+    </div>
+    <p class="mpg-hero-venue">📍 ${esc(S.stadium)}${venueParen}</p>
+    <div class="mpg-hero-time">
+      ${S.open ? `<span class="mpg-time-chip">開場<strong>${esc(S.open)}</strong></span>` : ''}
+      ${S.start ? `<span class="mpg-time-chip mpg-time-chip--start">試合開始<strong>${esc(S.start)}</strong></span>` : ''}
+      ${S.chip ? `<span class="mpg-time-chip mpg-time-chip--fill">${esc(S.chip.split(' ')[0])}<strong>${esc(S.chip.split(' ').slice(1).join(' ') || '')}</strong></span>` : ''}
+    </div>
+  </section>
+
+  <div class="mpg-ticker" aria-hidden="true">
+    <div class="mpg-ticker-track">
+      <span>${TICKER_TEXT}</span>
+      <span>${TICKER_TEXT}</span>
+    </div>
+  </div>`;
+
+  /* ---- ポスター ---- */
+  if (S.poster) {
+    h += `
+  <figure class="mpg-poster">
+    <img src="${esc(S.poster)}" alt="試合ポスター">
+  </figure>`;
+  }
+
+  /* ---- 開催概要テーブル ---- */
+  h += `
+  <table class="mpg-table">
+    <tr>
+      <th>試合日時</th>
+      <td>${esc(longDate)}${S.start ? ` ${esc(S.start)}試合開始` : ''}${S.open ? `（${esc(S.open)}開場）` : ''}</td>
+    </tr>
+    <tr>
+      <th>対戦カード</th>
+      <td>愛媛マンダリンパイレーツ VS ${esc(S.oppName)}${S.league ? `<br>（${esc(S.league)}）` : ''}</td>
+    </tr>
+    <tr>
+      <th>会場</th>
+      <td>${esc(S.stadium)}${venueParen}${S.access ? `<br>${esc(S.access)}` : ''}</td>
+    </tr>
+    <tr>
+      <th>チケット</th>
+      <td>${boldTicket(S.ticket)}</td>
+    </tr>
+  </table>`;
+
+  /* ---- コンテンツセクション（自由編集） ---- */
+  S.sections.forEach(sec => {
+    if (!sec.items.length && !sec.intro) return;
+    const enChip = sec.en ? `<span class="en">${esc(sec.en)}</span>` : '';
+    let body = '';
+    if (sec.layout === 'list') {
+      const lis = sec.items.filter(it => it.title).map(it => `<li>${esc(it.title)}</li>`).join('\n      ');
+      if (lis) body = `<ul class="mpg-list">
+      ${lis}
+    </ul>`;
+    } else if (sec.items.length) {
+      body = `<div class="mpg-cards">${sec.items.map(minicard).join('')}
+    </div>`;
+    }
+    h += `
+  <section class="mpg-section">
+    <h2 class="mpg-sec-title"><span class="ja">${esc(sec.title)}</span>${enChip}</h2>
+    ${sec.intro ? `<p>${esc(sec.intro)}</p>` : ''}
+    ${body}
+  </section>`;
+  });
+
+  /* ---- YouTube配信 ---- */
+  if (S.liveShow) {
+    h += `
+  <div class="mpg-live">
+    ${S.liveThumb ? `<img class="mpg-live-thumb" src="${esc(S.liveThumb)}" alt="配信サムネイル">` : ''}
+    <div class="mpg-live-label">
+      <span class="mpg-live-play">▶</span>
+      <span>
+        <strong><span class="mpg-live-chip">LIVE</span>公式YouTubeで無料生配信！</strong>
+        <span>球場に来られない方もリアルタイムで応援できます</span>
+      </span>
+    </div>
+    <a class="mpg-btn" href="${esc(S.youtube || 'https://www.youtube.com/')}">配信ページはこちら</a>
+  </div>`;
+  }
+
+  /* ---- アクセス ---- */
+  if (S.stadium) {
+    h += `
+  <section class="mpg-section">
+    <h2 class="mpg-sec-title"><span class="ja">アクセス</span><span class="en">Access</span></h2>
+    <div class="mpg-access">
+      ${S.stadiumImg ? `<img class="mpg-access-photo" src="${esc(S.stadiumImg)}" alt="${esc(S.stadium)}">` : ''}
+      <div class="mpg-access-info">
+        <strong>${esc(S.stadium)}</strong>
+        <span>${esc(S.addr)}${S.addr && S.access ? '／' : ''}${esc(S.access)}</span>
+      </div>
+      <a class="mpg-btn mpg-btn--outline" href="${esc(mapUrl)}">Googleマップで開く</a>
+    </div>
+  </section>`;
+  }
+
+  /* ---- 注意事項 ---- */
+  const notes = lines(S.notes);
+  if (notes.length) {
+    h += `
+  <div class="mpg-notes">
+    <h3>⚠ ご来場にあたってのお願い</h3>
+    <ul>
+      ${notes.map(l => `<li>${esc(l)}</li>`).join('\n      ')}
+    </ul>
+  </div>`;
+  }
+
+  /* ---- CTA ---- */
+  if (S.ticketUrl) {
+    h += `
+  <div class="mpg-cta">
+    <a class="mpg-btn mpg-btn--glow" href="${esc(S.ticketUrl)}">チケット情報を見る</a>
+  </div>`;
+  }
+
+  /* ---- SNS ---- */
+  h += `
+  <div class="mpg-sns">
+    <h3>最新情報はSNSでチェック！</h3>
+    <p>試合速報・イベント情報・選手の素顔を毎日発信中</p>
+    <div class="mpg-sns-btns">
+      ${S.snsIg ? `<a class="mpg-sns-btn mpg-sns-btn--ig" href="${esc(S.snsIg)}">Instagram</a>` : ''}
+      ${S.snsYt ? `<a class="mpg-sns-btn mpg-sns-btn--yt" href="${esc(S.snsYt)}">YouTube</a>` : ''}
+      ${S.snsX ? `<a class="mpg-sns-btn mpg-sns-btn--x" href="${esc(S.snsX)}">X（旧Twitter）</a>` : ''}
+      ${S.snsLine ? `<a class="mpg-sns-btn mpg-sns-btn--line" href="${esc(S.snsLine)}">LINE</a>` : ''}
+    </div>
+  </div>`;
+
+  return `<div class="mp-game">${h}\n</div>`;
+}
+
+function buildOutput(S, withCss) {
+  const style = `<style>${TEMPLATE_CSS}</style>\n`;
+  return (withCss ? style : '') + buildBody(S);
+}
+window.buildOutput = buildOutput;   // 動作確認用
+window.collect = collect;
+
+/* ================================================================
+   プレビュー・保存・コピー
+================================================================ */
+let timer = null;
+function refresh() {
+  clearTimeout(timer);
+  timer = setTimeout(() => {
+    const S = collect();
+    $('pv').srcdoc = '<!doctype html><html lang="ja"><head><meta charset="utf-8">'
+      + '<meta name="viewport" content="width=device-width, initial-scale=1">'
+      + '<style>body{margin:0;padding:12px;background:#fff}</style>'
+      + `<style>${TEMPLATE_CSS}</style></head><body>` + buildBody(S) + '</body></html>';
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(S)); } catch (e) { /* 保存できなくても動作は継続 */ }
+  }, 250);
+}
+
+async function copyHtml() {
+  const out = buildOutput(collect(), $('f-include-css').checked);
+  let ok = false;
+  try {
+    await navigator.clipboard.writeText(out);
+    ok = true;
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = out;
+    document.body.appendChild(ta);
+    ta.select();
+    ok = document.execCommand('copy');
+    ta.remove();
+  }
+  $('copy-msg').textContent = ok ? '✓ コピーしました' : 'コピー失敗…';
+  setTimeout(() => { $('copy-msg').textContent = ''; }, 2500);
+}
+
+function downloadHtml() {
+  const S = collect();
+  const out = '<meta charset="utf-8">\n' + buildOutput(S, true);
+  const blob = new Blob([out], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `game-info_${S.date || 'draft'}.html`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ================================================================
+   保存内容の復元・初期化
+================================================================ */
+function restore() {
+  let S = null;
+  try { S = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch (e) { S = null; }
+  if (!S) {
+    fillSections(SECTION_DEFAULTS);
+    return;
+  }
+  const set = (id, v) => { if (v !== undefined) $(id).value = v; };
+  set('f-date', S.date); set('f-eyebrow', S.eyebrow); set('f-daybadge', S.dayBadge);
+  $('f-opponent').value = S.oppSel || '香川オリーブガイナーズ';
+  set('f-opp-name', S.oppSel === '__other' ? S.oppName : '');
+  set('f-opp-en', S.oppSel === '__other' ? S.oppEn : '');
+  set('f-league', S.league);
+  $('f-stadium').value = S.stSel || '坊っちゃんスタジアム';
+  set('f-stadium-name', S.stSel === '__other' ? S.stadium : '');
+  set('f-addr', S.addr); set('f-access', S.access);
+  set('f-open', S.open); set('f-start', S.start); set('f-chip', S.chip);
+  set('f-ticket', S.ticket); set('f-poster', S.poster); set('f-stadium-img', S.stadiumImg);
+  set('f-mascot-l', S.mascotL); set('f-mascot-r', S.mascotR); set('f-bubble', S.bubble);
+  $('f-bubble-side').value = S.bubbleSide === 'right' ? 'right' : 'left';
+  set('f-notes', S.notes);
+  $('f-live-show').checked = S.liveShow !== false;
+  set('f-live-thumb', S.liveThumb);
+  set('f-youtube', S.youtube); set('f-ticket-url', S.ticketUrl);
+  set('f-sns-x', S.snsX); set('f-sns-ig', S.snsIg); set('f-sns-yt', S.snsYt); set('f-sns-line', S.snsLine);
+  fillSections(S.sections?.length ? S.sections : SECTION_DEFAULTS);
+  toggleCustomFields();
+}
+
+function toggleCustomFields() {
+  $('opp-custom').style.display = $('f-opponent').value === '__other' ? 'grid' : 'none';
+  $('stadium-custom').style.display = $('f-stadium').value === '__other' ? 'block' : 'none';
+}
+
+/* ================================================================
+   イベント登録
+================================================================ */
+document.addEventListener('input', refresh);
+document.addEventListener('change', refresh);
+
+$('f-stadium').addEventListener('change', () => {
+  toggleCustomFields();
+  const m = STADIUMS[$('f-stadium').value];
+  if (m) { $('f-addr').value = m.addr; $('f-access').value = m.access; }
+  refresh();
+});
+$('f-opponent').addEventListener('change', () => { toggleCustomFields(); refresh(); });
+
+$('add-section').addEventListener('click', () => {
+  addSection({ title: '', en: '', intro: '', layout: 'cards', items: [{}] });
+  refresh();
+});
+
+$('btn-copy').addEventListener('click', copyHtml);
+$('btn-dl').addEventListener('click', downloadHtml);
+$('btn-reset').addEventListener('click', () => {
+  if (!confirm('入力内容をすべて初期値に戻します。よろしいですか？')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+});
+
+$('pv-pc').addEventListener('click', () => {
+  $('pv').classList.remove('mobile');
+  $('pv-pc').classList.add('on'); $('pv-sp').classList.remove('on');
+});
+$('pv-sp').addEventListener('click', () => {
+  $('pv').classList.add('mobile');
+  $('pv-sp').classList.add('on'); $('pv-pc').classList.remove('on');
+});
+
+/* ---- 起動 ---- */
+restore();
+if (!$('f-addr').value) {
+  const m = STADIUMS[$('f-stadium').value];
+  if (m) { $('f-addr').value = m.addr; $('f-access').value = m.access; }
+}
+refresh();
+</script>
+</body>
+</html>
