@@ -62,12 +62,15 @@
     background: #fff7f0;
     border: 1px solid var(--line);
     border-radius: 10px;
-    padding: 10px 12px;
+    padding: 12px;
     margin: 12px 0 4px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
   }
+  .savebar-group { display: flex; flex-direction: column; gap: 8px; }
+  .savebar-group + .savebar-group { border-top: 1px dashed var(--line); padding-top: 12px; }
+  .savebar-label { font-size: 12px; font-weight: 700; color: var(--sub); }
   .savebar-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
   .savebar select { flex: 1; min-width: 150px; }
   .btn-mini {
@@ -253,16 +256,24 @@
   <div class="form-pane">
 
     <div class="savebar">
-      <div class="savebar-row">
-        <select id="f-saves"><option value="">保存した試合を呼び出す…</option></select>
-        <button type="button" class="btn-mini" id="btn-load">呼び出し</button>
-        <button type="button" class="btn-mini btn-mini-danger" id="btn-del">削除</button>
+      <div class="savebar-group">
+        <div class="savebar-label">① この端末に保存した試合</div>
+        <div class="savebar-row">
+          <select id="f-saves"><option value="">― 保存した試合を選ぶ ―</option></select>
+          <button type="button" class="btn-mini" id="btn-load">呼び出し</button>
+          <button type="button" class="btn-mini btn-mini-danger" id="btn-del">削除</button>
+        </div>
+        <div class="savebar-row">
+          <button type="button" class="btn-mini btn-mini-accent" id="btn-save-slot">＋ いまの内容をこの端末に保存</button>
+        </div>
       </div>
-      <div class="savebar-row">
-        <button type="button" class="btn-mini btn-mini-accent" id="btn-save-slot">＋ 名前を付けて保存</button>
-        <button type="button" class="btn-mini" id="btn-dl">ファイルに保存</button>
-        <button type="button" class="btn-mini" id="btn-open">ファイルを開く</button>
-        <input type="file" id="f-file" accept=".html,.htm" hidden>
+      <div class="savebar-group">
+        <div class="savebar-label">② ファイルで保存・読み込み（別のPCや人と共有する場合）</div>
+        <div class="savebar-row">
+          <button type="button" class="btn-mini" id="btn-dl">ファイルに保存</button>
+          <button type="button" class="btn-mini" id="btn-open">保存したファイルを開く</button>
+          <input type="file" id="f-file" accept=".html,.htm" hidden>
+        </div>
       </div>
     </div>
 
@@ -1824,7 +1835,7 @@ function getSaves() { try { return JSON.parse(localStorage.getItem(SAVES_KEY)) |
 function setSaves(a) { try { localStorage.setItem(SAVES_KEY, JSON.stringify(a)); } catch (e) { /* 保存不可でも継続 */ } }
 function refreshSlots() {
   const saves = getSaves();
-  $('f-saves').innerHTML = '<option value="">保存した試合を呼び出す…</option>' +
+  $('f-saves').innerHTML = '<option value="">― 保存した試合を選ぶ ―</option>' +
     saves.map((s, i) => `<option value="${i}">${esc(s.name)}</option>`).join('');
 }
 function defaultSaveName(S) {
