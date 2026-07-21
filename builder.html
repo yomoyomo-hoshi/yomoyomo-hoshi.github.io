@@ -57,6 +57,36 @@
   }
   #copy-msg { font-size: 12px; color: #15803d; font-weight: 700; min-width: 110px; }
 
+  /* 保存・呼び出しバー */
+  .savebar {
+    background: #fff7f0;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin: 12px 0 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .savebar-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .savebar select { flex: 1; min-width: 150px; }
+  .btn-mini {
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--navy);
+    border-radius: 7px;
+    padding: 7px 12px;
+    font-size: 12.5px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-mini:hover { background: #f9fafb; }
+  .btn-mini-accent { border-color: var(--orange); color: var(--orange-dark); }
+  .btn-mini-accent:hover { background: #fff1e6; }
+  .btn-mini-danger:hover { color: #dc2626; border-color: #dc2626; }
+
   .wrap { display: flex; align-items: flex-start; }
   .form-pane { width: 500px; min-width: 400px; padding: 6px 22px 80px; }
   .preview-pane {
@@ -215,13 +245,26 @@
   <span id="copy-msg"></span>
   <label><input type="checkbox" id="f-include-css" checked> CSSを含める</label>
   <button class="btn btn-copy" id="btn-copy">HTMLをコピー</button>
-  <button class="btn btn-sub" id="btn-dl">ファイル保存</button>
   <button class="btn btn-danger" id="btn-reset">リセット</button>
 </div>
 
 <div class="wrap">
   <!-- ===================== 入力フォーム ===================== -->
   <div class="form-pane">
+
+    <div class="savebar">
+      <div class="savebar-row">
+        <select id="f-saves"><option value="">保存した試合を呼び出す…</option></select>
+        <button type="button" class="btn-mini" id="btn-load">呼び出し</button>
+        <button type="button" class="btn-mini btn-mini-danger" id="btn-del">削除</button>
+      </div>
+      <div class="savebar-row">
+        <button type="button" class="btn-mini btn-mini-accent" id="btn-save-slot">＋ 名前を付けて保存</button>
+        <button type="button" class="btn-mini" id="btn-dl">ファイルに保存</button>
+        <button type="button" class="btn-mini" id="btn-open">ファイルを開く</button>
+        <input type="file" id="f-file" accept=".html,.htm" hidden>
+      </div>
+    </div>
 
     <details open>
       <summary>基本情報（毎試合ここを書き換え）</summary>
@@ -1599,15 +1642,233 @@ async function copyHtml() {
   setTimeout(() => { $('copy-msg').textContent = ''; }, 2500);
 }
 
+/* ---- 一時メッセージ ---- */
+function flash(msg) {
+  $('copy-msg').textContent = msg;
+  setTimeout(() => { $('copy-msg').textContent = ''; }, 2500);
+}
+
+/* ---- ファイルへ埋め込む設定（UTF-8対応のBase64） ---- */
+const STATE_MARK_A = '<!--MPBUILDER-STATE ';
+const STATE_MARK_B = ' MPBUILDER-STATE-->';
+function utf8ToB64(s) { return btoa(String.fromCharCode(...new TextEncoder().encode(s))); }
+function b64ToUtf8(b) { return new TextDecoder().decode(Uint8Array.from(atob(b), c => c.charCodeAt(0))); }
+
 function downloadHtml() {
   const S = collect();
-  const out = '<meta charset="utf-8">\n' + buildOutput(S, true);
+  const stateComment = STATE_MARK_A + utf8ToB64(JSON.stringify(S)) + STATE_MARK_B + '\n';
+  const out = '<meta charset="utf-8">\n' + stateComment + buildOutput(S, true);
   const blob = new Blob([out], { type: 'text/html;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `game-info_${S.date || 'draft'}.html`;
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+/* ================================================================
+   ファイルを開く（設定埋め込み → なければ描画HTMLから逆解析）
+================================================================ */
+function openFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    const S = extractState(String(reader.result || ''));
+    if (!S) {
+      alert('このファイルからは設定を読み込めませんでした。\nビルダーの「ファイルに保存」で作成したHTMLファイルを選んでください。');
+      return;
+    }
+    applyState(S);
+    refresh();
+    flash('✓ ファイルを読み込みました');
+  };
+  reader.readAsText(file);
+}
+
+function extractState(text) {
+  const a = text.indexOf(STATE_MARK_A);
+  if (a >= 0) {
+    const b = text.indexOf(STATE_MARK_B, a);
+    if (b > a) {
+      try { return JSON.parse(b64ToUtf8(text.slice(a + STATE_MARK_A.length, b).trim())); } catch (e) { /* 続けてフォールバック */ }
+    }
+  }
+  try { return parseRenderedHtml(text); } catch (e) { return null; }
+}
+
+/* 設定が埋め込まれていない旧ファイル用：描画済みHTMLから状態を推定 */
+function parseRenderedHtml(text) {
+  const doc = new DOMParser().parseFromString(text, 'text/html');
+  const game = doc.querySelector('.mp-game');
+  if (!game) return null;
+  const q = sel => game.querySelector(sel);
+  const txt = el => el ? el.textContent.trim() : '';
+  const src = el => el ? (el.getAttribute('src') || '') : '';
+  const cell = label => {
+    const r = [...game.querySelectorAll('.mpg-table tr')].find(tr => txt(tr.querySelector('th')) === label);
+    return r ? r.querySelector('td') : null;
+  };
+  const S = {};
+
+  /* テーマ */
+  const mOr = (game.getAttribute('style') || '').match(/--mp-orange:\s*(#[0-9a-fA-F]{3,6})/);
+  if (mOr) {
+    const hex = mOr[1].toLowerCase();
+    const preset = Object.entries(THEME_PRESETS).find(([, v]) => v.toLowerCase() === hex);
+    S.themeSel = preset ? preset[0] : '__custom';
+    S.themeCustom = hex;
+  } else { S.themeSel = 'orange'; S.themeCustom = '#ff7719'; }
+
+  /* ヒーロー */
+  S.eyebrow = txt(q('.mpg-hero-eyebrow'));
+  S.dayBadge = txt(q('.mpg-day-badge'));
+
+  const teams = [...game.querySelectorAll('.mpg-hero .mpg-team')];
+  if (teams[1]) {
+    S.oppEn = txt(teams[1].querySelector('small'));
+    const c = teams[1].cloneNode(true);
+    const sm = c.querySelector('small'); if (sm) sm.remove();
+    const oppName = c.textContent.trim();
+    S.oppSel = OPPONENTS[oppName] !== undefined ? oppName : '__other';
+    S.oppName = oppName;
+  }
+
+  const fill = q('.mpg-time-chip--fill');
+  if (fill) {
+    const strong = fill.querySelector('strong');
+    const label = fill.cloneNode(true);
+    const s2 = label.querySelector('strong'); if (s2) s2.remove();
+    S.chip = (label.textContent.trim() + (strong ? ' ' + strong.textContent.trim() : '')).trim();
+  }
+
+  /* 開催概要テーブル */
+  const dtTd = cell('試合日時');
+  if (dtTd) {
+    const t = dtTd.textContent;
+    const md = t.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+    if (md) S.date = `${md[1]}-${String(md[2]).padStart(2, '0')}-${String(md[3]).padStart(2, '0')}`;
+    const ms = t.match(/(\d{1,2}:\d{2})\s*試合開始/); if (ms) S.start = ms[1];
+    const mo = t.match(/（(\d{1,2}:\d{2})\s*開場）/); if (mo) S.open = mo[1];
+  }
+  const cardTd = cell('対戦カード');
+  if (cardTd) {
+    const m = cardTd.textContent.match(/（([^（）]+)）\s*$/);
+    if (m) S.league = m[1];
+  }
+  const venueTd = cell('会場');
+  if (venueTd) {
+    const parts = venueTd.innerHTML.split(/<br\s*\/?>/i);
+    const first = new DOMParser().parseFromString(parts[0], 'text/html').body.textContent.trim();
+    S.access = parts[1] ? new DOMParser().parseFromString(parts[1], 'text/html').body.textContent.trim() : '';
+    const mAddr = first.match(/（([^（）]*)）\s*$/);
+    if (mAddr) { S.addr = mAddr[1]; S.stadium = first.slice(0, mAddr.index).trim(); }
+    else { S.addr = ''; S.stadium = first; }
+    S.stSel = STADIUMS[S.stadium] !== undefined ? S.stadium : '__other';
+  }
+  const ticketTd = cell('チケット');
+  if (ticketTd) S.ticket = ticketTd.textContent.trim();
+
+  /* 画像・マスコット */
+  S.poster = src(q('.mpg-poster img'));
+  S.stadiumImg = src(q('.mpg-access-photo'));
+  const mascotEls = [...game.querySelectorAll('.mpg-mascots .mpg-mascot')];
+  if (mascotEls[0]) S.mascotL = src(mascotEls[0].querySelector('img'));
+  if (mascotEls[1]) S.mascotR = src(mascotEls[1].querySelector('img'));
+  const bub = q('.mpg-bubble');
+  if (bub) { S.bubble = bub.textContent.trim(); S.bubbleSide = bub.closest('.mpg-mascot') === mascotEls[1] ? 'right' : 'left'; }
+
+  /* コンテンツセクション（アクセスは別処理なので除外） */
+  S.sections = [...game.querySelectorAll('.mpg-section')].filter(sec => !sec.querySelector('.mpg-access')).map(sec => {
+    const introP = sec.querySelector(':scope > p');
+    let layout = 'list', items = [];
+    if (sec.querySelector('.mpg-cards')) {
+      layout = 'cards';
+      items = [...sec.querySelectorAll('.mpg-mini')].map(m => ({
+        img: src(m.querySelector('.mpg-mini-photo img')),
+        badge: txt(m.querySelector('.mpg-mini-badge')),
+        title: txt(m.querySelector('h4')),
+        desc: txt(m.querySelector('p'))
+      }));
+    } else {
+      items = [...sec.querySelectorAll('.mpg-list li')].map(li => ({ title: li.textContent.trim() }));
+    }
+    return {
+      title: txt(sec.querySelector('.mpg-sec-title .ja')),
+      en: txt(sec.querySelector('.mpg-sec-title .en')),
+      intro: introP ? introP.textContent.trim() : '',
+      layout, items
+    };
+  });
+
+  /* 注意事項・配信・CTA・SNS */
+  S.notes = [...game.querySelectorAll('.mpg-notes li')].map(li => li.textContent.trim()).join('\n');
+  const live = q('.mpg-live');
+  S.liveShow = !!live;
+  if (live) {
+    S.youtube = live.querySelector('a.mpg-btn') ? live.querySelector('a.mpg-btn').getAttribute('href') : '';
+    S.liveThumb = src(live.querySelector('.mpg-live-thumb'));
+  }
+  const cta = q('.mpg-cta a');
+  if (cta) S.ticketUrl = cta.getAttribute('href');
+  const snsHref = cls => { const a2 = game.querySelector('.mpg-sns-btn--' + cls); return a2 ? a2.getAttribute('href') : ''; };
+  S.snsIg = snsHref('ig'); S.snsYt = snsHref('yt'); S.snsX = snsHref('x');
+  S.snsLine = snsHref('line'); S.snsNote = snsHref('note');
+
+  return S;
+}
+
+/* ================================================================
+   名前付き保存（ブラウザ内・プルダウンで呼び出し／削除）
+================================================================ */
+const SAVES_KEY = 'mpirates-builder-saves-v1';
+function getSaves() { try { return JSON.parse(localStorage.getItem(SAVES_KEY)) || []; } catch (e) { return []; } }
+function setSaves(a) { try { localStorage.setItem(SAVES_KEY, JSON.stringify(a)); } catch (e) { /* 保存不可でも継続 */ } }
+function refreshSlots() {
+  const saves = getSaves();
+  $('f-saves').innerHTML = '<option value="">保存した試合を呼び出す…</option>' +
+    saves.map((s, i) => `<option value="${i}">${esc(s.name)}</option>`).join('');
+}
+function defaultSaveName(S) {
+  const dt = parseDate(S.date);
+  const d = dt ? `${dt.y}.${dt.m}.${dt.d}` : '';
+  return ((d + (S.oppName ? ` vs ${S.oppName}` : '')).trim()) || '無題';
+}
+function saveSlot() {
+  const S = collect();
+  const name = (prompt('保存名を入力してください', defaultSaveName(S)) || '').trim();
+  if (!name) return;
+  const saves = getSaves();
+  const idx = saves.findIndex(s => s.name === name);
+  const entry = { name, ts: Date.now(), state: S };
+  if (idx >= 0) {
+    if (!confirm(`「${name}」は既にあります。上書きしますか？`)) return;
+    saves[idx] = entry;
+  } else {
+    saves.push(entry);
+  }
+  setSaves(saves);
+  refreshSlots();
+  flash('✓ 保存しました');
+}
+function loadSlot() {
+  const v = $('f-saves').value;
+  if (v === '') { alert('呼び出す保存版をプルダウンから選んでください'); return; }
+  const s = getSaves()[Number(v)];
+  if (!s) return;
+  applyState(s.state);
+  refresh();
+  flash('✓ 呼び出しました');
+}
+function deleteSlot() {
+  const v = $('f-saves').value;
+  if (v === '') { alert('削除する保存版をプルダウンから選んでください'); return; }
+  const saves = getSaves();
+  const s = saves[Number(v)];
+  if (!s) return;
+  if (!confirm(`「${s.name}」を削除しますか？`)) return;
+  saves.splice(Number(v), 1);
+  setSaves(saves);
+  refreshSlots();
+  flash('✓ 削除しました');
 }
 
 /* ================================================================
@@ -1620,6 +1881,11 @@ function restore() {
     fillSections(SECTION_DEFAULTS);
     return;
   }
+  applyState(S);
+}
+
+/* 状態オブジェクト → フォーム全体へ反映（自動保存の復元・呼び出し・ファイル読込で共用） */
+function applyState(S) {
   const set = (id, v) => { if (v !== undefined) $(id).value = v; };
   set('f-date', S.date); set('f-eyebrow', S.eyebrow); set('f-daybadge', S.dayBadge);
   $('f-opponent').value = S.oppSel || '香川オリーブガイナーズ';
@@ -1673,6 +1939,11 @@ $('add-section').addEventListener('click', () => {
 
 $('btn-copy').addEventListener('click', copyHtml);
 $('btn-dl').addEventListener('click', downloadHtml);
+$('btn-open').addEventListener('click', () => $('f-file').click());
+$('f-file').addEventListener('change', e => { const f = e.target.files[0]; if (f) openFile(f); e.target.value = ''; });
+$('btn-save-slot').addEventListener('click', saveSlot);
+$('btn-load').addEventListener('click', loadSlot);
+$('btn-del').addEventListener('click', deleteSlot);
 $('btn-reset').addEventListener('click', () => {
   if (!confirm('入力内容をすべて初期値に戻します。よろしいですか？')) return;
   localStorage.removeItem(STORAGE_KEY);
@@ -1694,6 +1965,7 @@ if (!$('f-addr').value) {
   const m = STADIUMS[$('f-stadium').value];
   if (m) { $('f-addr').value = m.addr; $('f-access').value = m.access; }
 }
+refreshSlots();
 refresh();
 </script>
 </body>
