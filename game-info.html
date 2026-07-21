@@ -18,7 +18,9 @@
   .mp-game {
     --mp-orange: #ff7719;
     --mp-orange-dark: #ea6000;
+    --mp-orange-mid: #ff8f35;
     --mp-orange-light: #ffa14a;
+    --mp-orange-rgb: 255, 119, 25;
     --mp-navy: #101c33;
     --mp-navy-light: #1d2f52;
     --mp-white: #ffffff;
@@ -58,8 +60,8 @@
     50%      { transform: scale(1.12); text-shadow: 0 0 24px rgba(255, 255, 255, 0.95); }
   }
   @keyframes mpgGlowOrange {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 119, 25, 0.55); }
-    50%      { box-shadow: 0 0 0 12px rgba(255, 119, 25, 0); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(var(--mp-orange-rgb), 0.55); }
+    50%      { box-shadow: 0 0 0 12px rgba(var(--mp-orange-rgb), 0); }
   }
   @keyframes mpgGlowWhite {
     0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.6); }
@@ -88,7 +90,7 @@
   /* ============ ヒーロー（明るいオレンジの試合カード） ============ */
   .mpg-hero {
     position: relative;
-    background: linear-gradient(135deg, var(--mp-orange-light) 0%, var(--mp-orange) 50%, #ff8f35 100%);
+    background: linear-gradient(135deg, var(--mp-orange-light) 0%, var(--mp-orange) 50%, var(--mp-orange-mid) 100%);
     border-radius: 20px;
     padding: 44px 28px 40px;
     overflow: hidden;
@@ -450,7 +452,7 @@
     border: 1px solid var(--mp-cream-line);
     border-radius: 14px;
     padding: 20px 16px 16px;
-    box-shadow: 0 3px 12px rgba(255, 119, 25, 0.10);
+    box-shadow: 0 3px 12px rgba(var(--mp-orange-rgb), 0.10);
     transition: transform 0.25s ease, box-shadow 0.25s ease;
     overflow: hidden;
   }
@@ -462,7 +464,7 @@
     background: linear-gradient(90deg, var(--mp-orange), var(--mp-yellow));
     z-index: 1;
   }
-  .mpg-mini:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(255, 119, 25, 0.20); }
+  .mpg-mini:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(var(--mp-orange-rgb), 0.20); }
   .mpg-mini-photo { margin: -20px -16px 12px; overflow: hidden; }
   .mpg-mini-photo img {
     width: 100%;
@@ -567,7 +569,7 @@
     transform: translateX(-160%) skewX(-20deg);
     animation: mpgSheen 3.2s ease-in-out infinite;
   }
-  .mpg-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255, 119, 25, 0.4); }
+  .mpg-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(var(--mp-orange-rgb), 0.4); }
   .mpg-btn--glow { animation: mpgGlowOrange 2.4s ease-out infinite; }
   .mpg-btn--outline {
     background: transparent;
@@ -658,6 +660,7 @@
   .mpg-sns-btn--ig { background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af); }
   .mpg-sns-btn--yt { background: #e53935; }
   .mpg-sns-btn--line { background: #06c755; }
+  .mpg-sns-btn--note { background: #41c9b4; }
 
   /* ============ スマホ対応 ============ */
   @media (max-width: 640px) {
@@ -920,6 +923,7 @@
       <a class="mpg-sns-btn mpg-sns-btn--yt" href="https://www.youtube.com/">YouTube</a>
       <a class="mpg-sns-btn mpg-sns-btn--x" href="https://x.com/">X（旧Twitter）</a>
       <a class="mpg-sns-btn mpg-sns-btn--line" href="https://line.me/">LINE</a>
+      <a class="mpg-sns-btn mpg-sns-btn--note" href="https://note.com/mappy_e">note</a>
     </div>
   </div>
 

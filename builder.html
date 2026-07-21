@@ -117,13 +117,37 @@
     background: #fff;
   }
   input:focus, select:focus, textarea:focus { outline: 2px solid var(--orange); outline-offset: -1px; }
+  input[type="color"] {
+    width: 100%;
+    height: 37px;
+    padding: 3px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+  }
   textarea { resize: vertical; min-height: 66px; line-height: 1.6; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 
   /* 項目の行 */
   .rows { display: flex; flex-direction: column; gap: 10px; }
-  .row { border: 1px solid var(--line); border-radius: 8px; padding: 10px 34px 10px 10px; position: relative; background: #fff; }
+  .row { border: 1px solid var(--line); border-radius: 8px; padding: 10px 84px 10px 10px; position: relative; background: #fff; }
+  .row .rmv {
+    position: absolute;
+    top: 8px;
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 6px;
+    width: 22px; height: 22px;
+    cursor: pointer;
+    color: var(--sub);
+    font-size: 11px;
+    line-height: 1;
+  }
+  .row .rmv:hover { color: var(--orange); border-color: var(--orange); }
+  .row .rmv[data-mv="-1"] { right: 58px; }
+  .row .rmv[data-mv="1"] { right: 33px; }
   .row .del {
     position: absolute;
     top: 8px; right: 8px;
@@ -285,8 +309,28 @@
         <div class="field">
           <label>チケット</label>
           <input type="text" id="f-ticket" value="全席自由席　大人当日券 1,000円（税込）／高校生以下無料">
-          <p class="hint">金額と「無料」は自動で太字（オレンジ）になります</p>
+          <p class="hint">金額と「無料」は自動で太字（テーマ色）になります</p>
         </div>
+        <div class="grid2">
+          <div class="field">
+            <label>テーマカラー</label>
+            <select id="f-theme">
+              <option value="orange">チームオレンジ（標準）</option>
+              <option value="red">レッド</option>
+              <option value="navy">ネイビー</option>
+              <option value="blue">ブルー</option>
+              <option value="green">グリーン</option>
+              <option value="purple">パープル</option>
+              <option value="pink">ピンク</option>
+              <option value="__custom">カスタム（右で色を選択）</option>
+            </select>
+          </div>
+          <div class="field" id="theme-custom" style="display:none">
+            <label>カスタム色</label>
+            <input type="color" id="f-theme-color" value="#ff7719">
+          </div>
+        </div>
+        <p class="hint">ヒーロー・見出し・ボタンなどページ全体の色が変わります（濃淡は自動調整）</p>
       </div>
     </details>
 
@@ -373,6 +417,7 @@
           <div class="field"><label>YouTube</label><input type="url" id="f-sns-yt" value="https://www.youtube.com/"></div>
           <div class="field"><label>X（旧Twitter）</label><input type="url" id="f-sns-x" value="https://x.com/"></div>
           <div class="field"><label>LINE</label><input type="url" id="f-sns-line" value="https://line.me/"></div>
+          <div class="field"><label>note</label><input type="url" id="f-sns-note" value="https://note.com/mappy_e"></div>
         </div>
       </div>
     </details>
@@ -454,6 +499,73 @@ const STORAGE_KEY = 'mpirates-builder-v2';
 /* ---- ティッカー（電光掲示板）の文言 ---- */
 const TICKER_TEXT = 'GO! GO! MANDARIN PIRATES! ⚾ <b>突覇 〜最後まで諦めない〜</b> 🍊 EHIME MANDARIN PIRATES 2026';
 
+/* ---- テーマカラー（ベース1色から濃淡・背景色を自動派生） ---- */
+const THEME_PRESETS = {
+  orange: '#ff7719',
+  red:    '#e53935',
+  navy:   '#1d3a6e',
+  blue:   '#1e88e5',
+  green:  '#2e9e46',
+  purple: '#8e44ad',
+  pink:   '#e91e63'
+};
+
+function hexToHsl(hex) {
+  hex = hex.replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  const r = parseInt(hex.slice(0, 2), 16) / 255;
+  const g = parseInt(hex.slice(2, 4), 16) / 255;
+  const b = parseInt(hex.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+  }
+  return { h, s: s * 100, l: l * 100 };
+}
+function hslToHex(h, s, l) {
+  h = ((h % 360) + 360) % 360;
+  s = Math.min(Math.max(s, 0), 100) / 100;
+  l = Math.min(Math.max(l, 0), 100) / 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const m = l - c / 2;
+  const [r, g, b] =
+    h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] :
+    h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  const to = v => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+  return '#' + to(r) + to(g) + to(b);
+}
+function hexToRgbStr(hex) {
+  hex = hex.replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  return [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16)).join(', ');
+}
+/* テーマ選択 → .mp-game に付ける style 属性（標準オレンジのときは空＝従来と同一出力） */
+function themeStyleAttr(S) {
+  const base = S.themeSel === '__custom'
+    ? (S.themeCustom || THEME_PRESETS.orange)
+    : (THEME_PRESETS[S.themeSel] || THEME_PRESETS.orange);
+  if (base.toLowerCase() === THEME_PRESETS.orange) return '';
+  const { h, s, l } = hexToHsl(base);
+  const v = {
+    '--mp-orange': base,
+    '--mp-orange-dark': hslToHex(h, s, Math.max(l - 9, 10)),
+    '--mp-orange-mid': hslToHex(h + 3, s, Math.min(l + 5, 90)),
+    '--mp-orange-light': hslToHex(h + 5, s, Math.min(l + 10, 92)),
+    '--mp-orange-rgb': hexToRgbStr(base),
+    '--mp-cream': hslToHex(h, s, 96.5),
+    '--mp-cream-line': hslToHex(h, s, 90)
+  };
+  return ' style="' + Object.entries(v).map(([k, val]) => k + ':' + val).join(';') + '"';
+}
+
 /* ================================================================
    テンプレートCSS（game-info.html と同一。デザイン変更はここを修正）
 ================================================================ */
@@ -463,7 +575,9 @@ const TEMPLATE_CSS = `
   .mp-game {
     --mp-orange: #ff7719;
     --mp-orange-dark: #ea6000;
+    --mp-orange-mid: #ff8f35;
     --mp-orange-light: #ffa14a;
+    --mp-orange-rgb: 255, 119, 25;
     --mp-navy: #101c33;
     --mp-navy-light: #1d2f52;
     --mp-white: #ffffff;
@@ -502,8 +616,8 @@ const TEMPLATE_CSS = `
     50%      { transform: scale(1.12); text-shadow: 0 0 24px rgba(255, 255, 255, 0.95); }
   }
   @keyframes mpgGlowOrange {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 119, 25, 0.55); }
-    50%      { box-shadow: 0 0 0 12px rgba(255, 119, 25, 0); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(var(--mp-orange-rgb), 0.55); }
+    50%      { box-shadow: 0 0 0 12px rgba(var(--mp-orange-rgb), 0); }
   }
   @keyframes mpgGlowWhite {
     0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.6); }
@@ -531,7 +645,7 @@ const TEMPLATE_CSS = `
 
   .mpg-hero {
     position: relative;
-    background: linear-gradient(135deg, var(--mp-orange-light) 0%, var(--mp-orange) 50%, #ff8f35 100%);
+    background: linear-gradient(135deg, var(--mp-orange-light) 0%, var(--mp-orange) 50%, var(--mp-orange-mid) 100%);
     border-radius: 20px;
     padding: 44px 28px 40px;
     overflow: hidden;
@@ -875,7 +989,7 @@ const TEMPLATE_CSS = `
     border: 1px solid var(--mp-cream-line);
     border-radius: 14px;
     padding: 20px 16px 16px;
-    box-shadow: 0 3px 12px rgba(255, 119, 25, 0.10);
+    box-shadow: 0 3px 12px rgba(var(--mp-orange-rgb), 0.10);
     transition: transform 0.25s ease, box-shadow 0.25s ease;
     overflow: hidden;
   }
@@ -887,7 +1001,7 @@ const TEMPLATE_CSS = `
     background: linear-gradient(90deg, var(--mp-orange), var(--mp-yellow));
     z-index: 1;
   }
-  .mpg-mini:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(255, 119, 25, 0.20); }
+  .mpg-mini:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(var(--mp-orange-rgb), 0.20); }
   .mpg-mini-photo { margin: -20px -16px 12px; overflow: hidden; }
   .mpg-mini-photo img {
     width: 100%;
@@ -990,7 +1104,7 @@ const TEMPLATE_CSS = `
     transform: translateX(-160%) skewX(-20deg);
     animation: mpgSheen 3.2s ease-in-out infinite;
   }
-  .mpg-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255, 119, 25, 0.4); }
+  .mpg-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(var(--mp-orange-rgb), 0.4); }
   .mpg-btn--glow { animation: mpgGlowOrange 2.4s ease-out infinite; }
   .mpg-btn--outline {
     background: transparent;
@@ -1077,6 +1191,7 @@ const TEMPLATE_CSS = `
   .mpg-sns-btn--ig { background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af); }
   .mpg-sns-btn--yt { background: #e53935; }
   .mpg-sns-btn--line { background: #06c755; }
+  .mpg-sns-btn--note { background: #41c9b4; }
 
   @media (max-width: 640px) {
     .mpg-hero { padding: 32px 18px 34px; border-radius: 14px; }
@@ -1129,11 +1244,19 @@ function addItemRow(rowsBox, data = {}) {
   row.className = 'row';
   row.innerHTML =
     '<button type="button" class="del" title="削除">✕</button>' +
+    '<button type="button" class="rmv" data-mv="-1" title="上へ">↑</button>' +
+    '<button type="button" class="rmv" data-mv="1" title="下へ">↓</button>' +
     '<input type="text" data-k="title" placeholder="内容・タイトル" value="' + esc(data.title || '') + '">' +
     '<input type="text" data-k="badge" placeholder="バッジ（例：先着400名様／3回裏終了後）" value="' + esc(data.badge || '') + '">' +
     '<input type="text" data-k="desc" placeholder="説明文（任意）" value="' + esc(data.desc || '') + '">' +
     '<input type="url" data-k="img" placeholder="画像URL（任意） https://..." value="' + esc(data.img || '') + '">';
   row.querySelector('.del').addEventListener('click', () => { row.remove(); refresh(); });
+  row.querySelectorAll('.rmv').forEach(b => b.addEventListener('click', () => {
+    const dir = Number(b.dataset.mv);
+    if (dir < 0 && row.previousElementSibling) rowsBox.insertBefore(row, row.previousElementSibling);
+    if (dir > 0 && row.nextElementSibling) rowsBox.insertBefore(row.nextElementSibling, row);
+    refresh();
+  }));
   rowsBox.appendChild(row);
 }
 
@@ -1219,6 +1342,8 @@ function collect() {
     start: $('f-start').value,
     chip: $('f-chip').value.trim(),
     ticket: $('f-ticket').value.trim(),
+    themeSel: $('f-theme').value,
+    themeCustom: $('f-theme-color').value,
     poster: $('f-poster').value.trim(),
     stadiumImg: $('f-stadium-img').value.trim(),
     mascotL: $('f-mascot-l').value.trim(),
@@ -1234,7 +1359,8 @@ function collect() {
     snsX: $('f-sns-x').value.trim(),
     snsIg: $('f-sns-ig').value.trim(),
     snsYt: $('f-sns-yt').value.trim(),
-    snsLine: $('f-sns-line').value.trim()
+    snsLine: $('f-sns-line').value.trim(),
+    snsNote: $('f-sns-note').value.trim()
   };
 }
 
@@ -1425,10 +1551,11 @@ function buildBody(S) {
       ${S.snsYt ? `<a class="mpg-sns-btn mpg-sns-btn--yt" href="${esc(S.snsYt)}">YouTube</a>` : ''}
       ${S.snsX ? `<a class="mpg-sns-btn mpg-sns-btn--x" href="${esc(S.snsX)}">X（旧Twitter）</a>` : ''}
       ${S.snsLine ? `<a class="mpg-sns-btn mpg-sns-btn--line" href="${esc(S.snsLine)}">LINE</a>` : ''}
+      ${S.snsNote ? `<a class="mpg-sns-btn mpg-sns-btn--note" href="${esc(S.snsNote)}">note</a>` : ''}
     </div>
   </div>`;
 
-  return `<div class="mp-game">${h}\n</div>`;
+  return `<div class="mp-game"${themeStyleAttr(S)}>${h}\n</div>`;
 }
 
 function buildOutput(S, withCss) {
@@ -1504,6 +1631,8 @@ function restore() {
   set('f-addr', S.addr); set('f-access', S.access);
   set('f-open', S.open); set('f-start', S.start); set('f-chip', S.chip);
   set('f-ticket', S.ticket); set('f-poster', S.poster); set('f-stadium-img', S.stadiumImg);
+  $('f-theme').value = (THEME_PRESETS[S.themeSel] || S.themeSel === '__custom') ? S.themeSel : 'orange';
+  set('f-theme-color', S.themeCustom);
   set('f-mascot-l', S.mascotL); set('f-mascot-r', S.mascotR); set('f-bubble', S.bubble);
   $('f-bubble-side').value = S.bubbleSide === 'right' ? 'right' : 'left';
   set('f-notes', S.notes);
@@ -1511,6 +1640,7 @@ function restore() {
   set('f-live-thumb', S.liveThumb);
   set('f-youtube', S.youtube); set('f-ticket-url', S.ticketUrl);
   set('f-sns-x', S.snsX); set('f-sns-ig', S.snsIg); set('f-sns-yt', S.snsYt); set('f-sns-line', S.snsLine);
+  set('f-sns-note', S.snsNote);
   fillSections(S.sections?.length ? S.sections : SECTION_DEFAULTS);
   toggleCustomFields();
 }
@@ -1518,7 +1648,9 @@ function restore() {
 function toggleCustomFields() {
   $('opp-custom').style.display = $('f-opponent').value === '__other' ? 'grid' : 'none';
   $('stadium-custom').style.display = $('f-stadium').value === '__other' ? 'block' : 'none';
+  $('theme-custom').style.display = $('f-theme').value === '__custom' ? 'block' : 'none';
 }
+$('f-theme').addEventListener('change', toggleCustomFields);
 
 /* ================================================================
    イベント登録
