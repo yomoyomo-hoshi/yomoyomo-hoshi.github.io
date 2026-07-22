@@ -942,6 +942,7 @@ const TEMPLATE_CSS = `
     border-radius: 12px;
     overflow: hidden;
     padding: 9px 0;
+    contain: inline-size; /* nowrapの長文がテーマ側の列幅を押し広げてスマホで見切れるのを防ぐ */
   }
   .mpg-ticker-track {
     display: inline-flex;
