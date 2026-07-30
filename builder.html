@@ -163,6 +163,11 @@
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 
+  /* 日程の行（試合日・開場・試合開始） */
+  .date-grid { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 8px; }
+  .date-grid label { display: block; font-size: 11px; font-weight: 700; color: #374151; }
+  .date-grid input { margin-top: 3px; }
+
   /* 項目の行 */
   .rows { display: flex; flex-direction: column; gap: 10px; }
   .row { border: 1px solid var(--line); border-radius: 8px; padding: 10px 84px 10px 10px; position: relative; background: #fff; }
@@ -280,15 +285,14 @@
     <details open>
       <summary>基本情報（毎試合ここを書き換え）</summary>
       <div class="sec-body">
-        <div class="grid2">
-          <div class="field">
-            <label>試合日</label>
-            <input type="date" id="f-date" value="2026-07-19">
-          </div>
-          <div class="field">
-            <label>ラベル（英字）</label>
-            <input type="text" id="f-eyebrow" value="HOME GAME" placeholder="HOME GAME / NIGHT GAME など">
-          </div>
+        <div class="field">
+          <label>ラベル（英字）</label>
+          <input type="text" id="f-eyebrow" value="HOME GAME" placeholder="HOME GAME / NIGHT GAME など">
+        </div>
+        <div class="field">
+          <label>日程<span class="opt">連戦は「＋ 日程を追加」で複数日にできます</span></label>
+          <div class="rows" id="dates"></div>
+          <button type="button" class="add-btn" id="add-date">＋ 日程を追加</button>
         </div>
         <div class="field">
           <label>応援デーバッジ<span class="opt">空欄なら非表示</span></label>
@@ -346,19 +350,9 @@
             <input type="text" id="f-access" placeholder="例：JR市坪駅から徒歩2分">
           </div>
         </div>
-        <div class="grid3">
-          <div class="field">
-            <label>開場</label>
-            <input type="time" id="f-open" value="12:00">
-          </div>
-          <div class="field">
-            <label>試合開始</label>
-            <input type="time" id="f-start" value="13:00">
-          </div>
-          <div class="field">
-            <label>強調チップ<span class="opt">空欄で非表示</span></label>
-            <input type="text" id="f-chip" value="高校生以下 無料" placeholder="例：高校生以下 無料">
-          </div>
+        <div class="field">
+          <label>強調チップ<span class="opt">空欄で非表示</span></label>
+          <input type="text" id="f-chip" value="高校生以下 無料" placeholder="例：高校生以下 無料">
         </div>
         <div class="field">
           <label>チケット</label>
@@ -388,15 +382,54 @@
       </div>
     </details>
 
+    <details>
+      <summary>背景・演出</summary>
+      <div class="sec-body">
+        <div class="grid2">
+          <div class="field">
+            <label>ヒーローの背景パターン</label>
+            <select id="f-hero-bg">
+              <option value="rays">集中線（回転・標準）</option>
+              <option value="rays-still">集中線（止まったまま）</option>
+              <option value="stripes">斜めストライプ</option>
+              <option value="dots">ドット（水玉）</option>
+              <option value="waves">波（同心円）</option>
+              <option value="grid">グリッド（方眼）</option>
+              <option value="plain">無地（グラデーションのみ）</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>細かな演出</label>
+            <label style="font-weight:500"><input type="checkbox" id="f-hero-fx" checked style="width:auto"> 紙吹雪・浮遊絵文字を出す</label>
+            <label style="font-weight:500"><input type="checkbox" id="f-calm" style="width:auto"> 動きを控えめにする（アニメ停止）</label>
+          </div>
+        </div>
+        <div class="field">
+          <label><input type="checkbox" id="f-ticker-show" checked style="width:auto"> ティッカー（黄色の流れる帯）を表示</label>
+          <input type="text" id="f-ticker" value="GO! GO! MANDARIN PIRATES! ⚾ *突覇 〜最後まで諦めない〜* 🍊 EHIME MANDARIN PIRATES 2026">
+          <p class="hint">＊で囲んだ部分（例：*突覇*）はテーマ色の太字になります</p>
+        </div>
+      </div>
+    </details>
+
     <details open>
       <summary>画像・マスコット</summary>
       <div class="sec-body">
         <p class="hint">WordPressのメディアライブラリに画像をアップロード →「URLをコピー」して貼り付け。空欄の項目は表示されません。マスコットはチーム名の上に並びます。</p>
         <div class="grid2">
           <div class="field">
-            <label>試合ポスター画像URL</label>
-            <input type="url" id="f-poster" placeholder="https://...（横長 1200×630前後）">
+            <label>試合ポスター・チラシ画像URL</label>
+            <input type="url" id="f-poster" placeholder="https://...（横長でも縦長チラシでもOK）">
           </div>
+          <div class="field">
+            <label>ポスターの向き</label>
+            <select id="f-poster-orient">
+              <option value="landscape">横長（既定・幅いっぱい）</option>
+              <option value="portrait">縦長チラシ（中央に配置・大きすぎない幅）</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid2">
           <div class="field">
             <label>球場画像URL<span class="opt">アクセス欄に表示・空欄なら画像なし</span></label>
             <input type="url" id="f-stadium-img" placeholder="https://...（横長 640×360前後）">
@@ -550,8 +583,8 @@ const SECTION_DEFAULTS = [
 
 const STORAGE_KEY = 'mpirates-builder-v2';
 
-/* ---- ティッカー（電光掲示板）の文言 ---- */
-const TICKER_TEXT = 'GO! GO! MANDARIN PIRATES! ⚾ <b>突覇 〜最後まで諦めない〜</b> 🍊 EHIME MANDARIN PIRATES 2026';
+/* ---- ティッカー（電光掲示板）の既定文言。*で囲むとテーマ色の太字になる ---- */
+const TICKER_DEFAULT = 'GO! GO! MANDARIN PIRATES! ⚾ *突覇 〜最後まで諦めない〜* 🍊 EHIME MANDARIN PIRATES 2026';
 
 /* ---- テーマカラー（ベース1色から濃淡・背景色を自動派生） ---- */
 const THEME_PRESETS = {
@@ -744,6 +777,36 @@ const TEMPLATE_CSS = `
     background: repeating-linear-gradient(115deg, rgba(255,255,255,0.07) 0 14px, transparent 14px 34px);
     animation: mpgStripes 16s linear infinite;
   }
+
+  /* ---- 背景パターン切替（data-bg。未指定＝集中線が回る既定デザイン） ---- */
+  .mpg-hero[data-bg="rays-still"] .mpg-hero-rays { animation: none; }
+  .mpg-hero[data-bg="stripes"] .mpg-hero-rays,
+  .mpg-hero[data-bg="dots"] .mpg-hero-rays,
+  .mpg-hero[data-bg="waves"] .mpg-hero-rays,
+  .mpg-hero[data-bg="grid"] .mpg-hero-rays,
+  .mpg-hero[data-bg="plain"] .mpg-hero-rays { display: none; }
+  .mpg-hero[data-bg="plain"] .mpg-hero-stripes { display: none; }
+  .mpg-hero[data-bg="stripes"] .mpg-hero-stripes {
+    background: repeating-linear-gradient(115deg, rgba(255,255,255,0.14) 0 16px, transparent 16px 38px);
+  }
+  .mpg-hero[data-bg="dots"] .mpg-hero-stripes {
+    background: radial-gradient(rgba(255,255,255,0.22) 2.2px, transparent 2.4px);
+    background-size: 20px 20px;
+    animation: none;
+  }
+  .mpg-hero[data-bg="waves"] .mpg-hero-stripes {
+    background: repeating-radial-gradient(circle at 50% 118%, rgba(255,255,255,0.15) 0 18px, transparent 18px 44px);
+    animation: none;
+  }
+  .mpg-hero[data-bg="grid"] .mpg-hero-stripes {
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.13) 0 1.5px, transparent 1.5px 26px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.13) 0 1.5px, transparent 1.5px 26px);
+    animation: none;
+  }
+  /* 紙吹雪・浮遊絵文字のON/OFF */
+  .mpg-hero[data-fx="off"] .mpg-confetti,
+  .mpg-hero[data-fx="off"] .mpg-fx { display: none; }
   .mpg-hero-glow {
     position: absolute; z-index: 0;
     top: -140px; left: 50%;
@@ -826,6 +889,30 @@ const TEMPLATE_CSS = `
     background-clip: text;
     color: transparent;
   }
+  /* 複数日開催のとき：日付を並べるので少し小さく */
+  .mpg-hero-date--multi { font-size: clamp(34px, 7.2vw, 62px); }
+  .mpg-hero-date i { font-style: normal; opacity: 0.6; margin: 0 0.14em; }
+
+  /* 複数日開催の日程ブロック（各日の開場・開始） */
+  .mpg-hero-sched {
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    animation: mpgFadeUp 0.6s 0.58s ease both;
+  }
+  .mpg-sched-row { display: inline-flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; }
+  .mpg-sched-day {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 999px;
+    padding: 4px 13px;
+  }
+  .mpg-sched-day em { font-style: normal; font-size: 0.78em; margin-left: 5px; opacity: 0.85; }
 
   .mpg-mascots {
     margin-top: 14px;
@@ -970,6 +1057,8 @@ const TEMPLATE_CSS = `
     animation: mpgGradShift 6s linear infinite alternate;
   }
   .mpg-poster img { width: 100%; border-radius: 11px; }
+  /* 縦長チラシ：横幅いっぱいだと巨大になるので中央寄せで抑える */
+  .mpg-poster--portrait { max-width: 560px; margin-left: auto; margin-right: auto; }
 
   .mpg-table { width: 100%; margin-top: 28px; border-collapse: collapse; font-size: 14.5px; }
   .mpg-table th, .mpg-table td {
@@ -1265,6 +1354,12 @@ const TEMPLATE_CSS = `
     .mpg-access { justify-content: center; text-align: center; }
     .mpg-access-photo { width: 100%; }
   }
+  /* 「動きを控えめに」を選んだとき */
+  .mp-game[data-anim="calm"] *,
+  .mp-game[data-anim="calm"] *::before,
+  .mp-game[data-anim="calm"] *::after { animation: none !important; }
+  .mp-game[data-anim="calm"] .mpg-hero-date { color: var(--mp-white); background: none; }
+
   @media (prefers-reduced-motion: reduce) {
     .mp-game *, .mp-game *::before, .mp-game *::after { animation: none !important; transition: none !important; }
     .mpg-hero-date { color: var(--mp-white); background: none; }
@@ -1291,6 +1386,8 @@ function parseDate(v) {
 }
 /* 金額・「無料」を自動で強調 */
 const boldTicket = s => esc(s).replace(/(\d[\d,]*円（税込）|\d[\d,]*円|無料)/g, '<strong>$1</strong>');
+/* ティッカー文言：*で囲んだ部分をテーマ色の太字に */
+const tickerHtml = s => esc(String(s ?? '').trim() || TICKER_DEFAULT).replace(/\*([^*]+)\*/g, '<b>$1</b>');
 
 /* ================================================================
    コンテンツセクションの編集UI
@@ -1377,13 +1474,57 @@ function fillSections(arr) {
 }
 
 /* ================================================================
+   日程（複数日開催に対応。1日なら従来と同じ出力）
+================================================================ */
+function addDateRow(data = {}) {
+  const row = document.createElement('div');
+  row.className = 'row date-row';
+  row.innerHTML =
+    '<button type="button" class="del" title="この日程を削除">✕</button>' +
+    '<div class="date-grid">' +
+      '<label>試合日<input type="date" data-d="date" value="' + esc(data.date || '') + '"></label>' +
+      '<label>開場<input type="time" data-d="open" value="' + esc(data.open || '') + '"></label>' +
+      '<label>試合開始<input type="time" data-d="start" value="' + esc(data.start || '') + '"></label>' +
+    '</div>';
+  row.querySelector('.del').addEventListener('click', () => {
+    if (document.querySelectorAll('#dates .date-row').length <= 1) {
+      alert('日程は1つ以上必要です。日付を書き換えてご利用ください。');
+      return;
+    }
+    row.remove();
+    refresh();
+  });
+  $('dates').appendChild(row);
+}
+
+function readDates() {
+  const arr = [...document.querySelectorAll('#dates .date-row')].map(row => {
+    const o = {};
+    row.querySelectorAll('[data-d]').forEach(i => { o[i.dataset.d] = i.value; });
+    return o;
+  }).filter(o => o.date || o.open || o.start);
+  return arr.length ? arr : [{ date: '', open: '', start: '' }];
+}
+
+function fillDates(arr) {
+  $('dates').innerHTML = '';
+  const list = (arr && arr.length) ? arr : [{ date: '2026-07-19', open: '12:00', start: '13:00' }];
+  list.forEach(addDateRow);
+}
+
+/* ================================================================
    フォーム → 状態オブジェクト
 ================================================================ */
 function collect() {
   const oppSel = $('f-opponent').value;
   const stSel = $('f-stadium').value;
+  const dates = readDates();
   return {
-    date: $('f-date').value,
+    dates,
+    /* 先頭の日程は date/open/start にも入れる（旧データ・逆解析との互換用） */
+    date: dates[0].date,
+    open: dates[0].open,
+    start: dates[0].start,
     eyebrow: $('f-eyebrow').value.trim(),
     dayBadge: $('f-daybadge').value.trim(),
     oppSel,
@@ -1394,13 +1535,17 @@ function collect() {
     stadium: stSel === '__other' ? $('f-stadium-name').value.trim() : stSel,
     addr: $('f-addr').value.trim(),
     access: $('f-access').value.trim(),
-    open: $('f-open').value,
-    start: $('f-start').value,
     chip: $('f-chip').value.trim(),
     ticket: $('f-ticket').value.trim(),
     themeSel: $('f-theme').value,
     themeCustom: $('f-theme-color').value,
+    heroBg: $('f-hero-bg').value,
+    heroFx: $('f-hero-fx').checked,
+    calm: $('f-calm').checked,
+    tickerShow: $('f-ticker-show').checked,
+    ticker: $('f-ticker').value,
     poster: $('f-poster').value.trim(),
+    posterOrient: $('f-poster-orient').value,
     stadiumImg: $('f-stadium-img').value.trim(),
     mascotL: $('f-mascot-l').value.trim(),
     mascotR: $('f-mascot-r').value.trim(),
@@ -1424,9 +1569,17 @@ function collect() {
    状態 → HTML生成
 ================================================================ */
 function buildBody(S) {
-  const dt = parseDate(S.date);
-  const heroDate = dt ? `${dt.m}.${dt.d} <small>${dt.en}</small>` : '-.-';
-  const longDate = dt ? `${dt.y}年${dt.m}月${dt.d}日（${dt.ja}）` : '';
+  /* ---- 日程（複数日対応。旧データは date/open/start から1件を組み立て） ---- */
+  const rawDates = (S.dates && S.dates.length) ? S.dates : [{ date: S.date, open: S.open, start: S.start }];
+  const days = rawDates
+    .map(d => ({ open: d.open || '', start: d.start || '', p: parseDate(d.date) }))
+    .filter(d => d.p || d.open || d.start);
+  const multiDay = days.length > 1;
+  const heroDate = days.map(d => (d.p ? `${d.p.m}.${d.p.d} <small>${d.p.en}</small>` : ''))
+    .filter(Boolean).join('<i>/</i>') || '-.-';
+  const tableDates = days.map(d => (d.p
+    ? `${d.p.y}年${d.p.m}月${d.p.d}日（${d.p.ja}）${d.start ? ` ${esc(d.start)}試合開始` : ''}${d.open ? `（${esc(d.open)}開場）` : ''}`
+    : '')).filter(Boolean).join('<br>');
   const venueParen = S.addr ? `（${esc(S.addr)}）` : '';
   const mapUrl = 'https://maps.google.com/?q=' + encodeURIComponent(S.stadium || '');
   /* 「先着」を含むバッジはオレンジ、それ以外はネイビー */
@@ -1454,11 +1607,41 @@ function buildBody(S) {
       ${S.mascotR ? `<div class="mpg-mascot">${rightBubble}<img src="${esc(S.mascotR)}" alt="マスコット"></div>` : ''}
     </div>` : '';
 
+  /* ---- 時刻表示（1日＝従来のチップ／複数日＝日ごとの行） ---- */
+  const chipHtml = S.chip
+    ? `<span class="mpg-time-chip mpg-time-chip--fill">${esc(S.chip.split(' ')[0])}<strong>${esc(S.chip.split(' ').slice(1).join(' ') || '')}</strong></span>`
+    : '';
+  let timeArea;
+  if (multiDay) {
+    timeArea = `
+    <div class="mpg-hero-sched">
+      ${days.map(d => `<div class="mpg-sched-row">
+        ${d.p ? `<span class="mpg-sched-day mp-en">${d.p.m}/${d.p.d}<em>${d.p.en}</em></span>` : ''}
+        ${d.open ? `<span class="mpg-time-chip">開場<strong>${esc(d.open)}</strong></span>` : ''}
+        ${d.start ? `<span class="mpg-time-chip mpg-time-chip--start">試合開始<strong>${esc(d.start)}</strong></span>` : ''}
+      </div>`).join('')}
+      ${chipHtml ? `<div class="mpg-sched-row">${chipHtml}</div>` : ''}
+    </div>`;
+  } else {
+    const d0 = days[0] || { open: '', start: '' };
+    timeArea = `
+    <div class="mpg-hero-time">
+      ${d0.open ? `<span class="mpg-time-chip">開場<strong>${esc(d0.open)}</strong></span>` : ''}
+      ${d0.start ? `<span class="mpg-time-chip mpg-time-chip--start">試合開始<strong>${esc(d0.start)}</strong></span>` : ''}
+      ${chipHtml}
+    </div>`;
+  }
+
+  /* ---- ヒーローの背景パターン・細かな演出 ---- */
+  const heroAttr =
+    ((S.heroBg && S.heroBg !== 'rays') ? ` data-bg="${esc(S.heroBg)}"` : '') +
+    (S.heroFx === false ? ' data-fx="off"' : '');
+
   let h = '';
 
   /* ---- ヒーロー ---- */
   h += `
-  <section class="mpg-hero">
+  <section class="mpg-hero"${heroAttr}>
     <div class="mpg-hero-rays"></div>
     <div class="mpg-hero-stripes"></div>
     <div class="mpg-hero-glow"></div>
@@ -1472,32 +1655,33 @@ function buildBody(S) {
 
     <span class="mpg-hero-eyebrow mp-en">${esc(S.eyebrow || 'HOME GAME')}</span>
     ${S.dayBadge ? `<span class="mpg-day-badge">${esc(S.dayBadge)}</span>` : ''}
-    <div class="mpg-hero-date mp-en">${heroDate}</div>
+    <div class="mpg-hero-date mp-en${multiDay ? ' mpg-hero-date--multi' : ''}">${heroDate}</div>
     ${mascots}
     <div class="mpg-vs">
       <div class="mpg-team">愛媛マンダリンパイレーツ<small>EHIME MANDARIN PIRATES</small></div>
       <span class="mpg-vs-mark">VS</span>
       <div class="mpg-team">${esc(S.oppName)}${S.oppEn ? `<small>${esc(S.oppEn)}</small>` : ''}</div>
     </div>
-    <p class="mpg-hero-venue">📍 ${esc(S.stadium)}${venueParen}</p>
-    <div class="mpg-hero-time">
-      ${S.open ? `<span class="mpg-time-chip">開場<strong>${esc(S.open)}</strong></span>` : ''}
-      ${S.start ? `<span class="mpg-time-chip mpg-time-chip--start">試合開始<strong>${esc(S.start)}</strong></span>` : ''}
-      ${S.chip ? `<span class="mpg-time-chip mpg-time-chip--fill">${esc(S.chip.split(' ')[0])}<strong>${esc(S.chip.split(' ').slice(1).join(' ') || '')}</strong></span>` : ''}
-    </div>
-  </section>
+    <p class="mpg-hero-venue">📍 ${esc(S.stadium)}${venueParen}</p>${timeArea}
+  </section>`;
+
+  /* ---- ティッカー（電光掲示板） ---- */
+  if (S.tickerShow !== false) {
+    const tk = tickerHtml(S.ticker);
+    h += `
 
   <div class="mpg-ticker" aria-hidden="true">
     <div class="mpg-ticker-track">
-      <span>${TICKER_TEXT}</span>
-      <span>${TICKER_TEXT}</span>
+      <span>${tk}</span>
+      <span>${tk}</span>
     </div>
   </div>`;
+  }
 
-  /* ---- ポスター ---- */
+  /* ---- ポスター・チラシ ---- */
   if (S.poster) {
     h += `
-  <figure class="mpg-poster">
+  <figure class="mpg-poster${S.posterOrient === 'portrait' ? ' mpg-poster--portrait' : ''}">
     <img src="${esc(S.poster)}" alt="試合ポスター">
   </figure>`;
   }
@@ -1507,7 +1691,7 @@ function buildBody(S) {
   <table class="mpg-table">
     <tr>
       <th>試合日時</th>
-      <td>${esc(longDate)}${S.start ? ` ${esc(S.start)}試合開始` : ''}${S.open ? `（${esc(S.open)}開場）` : ''}</td>
+      <td>${tableDates}</td>
     </tr>
     <tr>
       <th>対戦カード</th>
@@ -1611,7 +1795,7 @@ function buildBody(S) {
     </div>
   </div>`;
 
-  return `<div class="mp-game"${themeStyleAttr(S)}>${h}\n</div>`;
+  return `<div class="mp-game"${themeStyleAttr(S)}${S.calm ? ' data-anim="calm"' : ''}>${h}\n</div>`;
 }
 
 function buildOutput(S, withCss) {
@@ -1753,14 +1937,23 @@ function parseRenderedHtml(text) {
     S.chip = (label.textContent.trim() + (strong ? ' ' + strong.textContent.trim() : '')).trim();
   }
 
-  /* 開催概要テーブル */
+  /* 開催概要テーブル（試合日時は複数行＝複数日開催に対応） */
   const dtTd = cell('試合日時');
   if (dtTd) {
-    const t = dtTd.textContent;
-    const md = t.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
-    if (md) S.date = `${md[1]}-${String(md[2]).padStart(2, '0')}-${String(md[3]).padStart(2, '0')}`;
-    const ms = t.match(/(\d{1,2}:\d{2})\s*試合開始/); if (ms) S.start = ms[1];
-    const mo = t.match(/（(\d{1,2}:\d{2})\s*開場）/); if (mo) S.open = mo[1];
+    S.dates = dtTd.innerHTML.split(/<br\s*\/?>/i).map(part => {
+      const t = new DOMParser().parseFromString(part, 'text/html').body.textContent;
+      const md = t.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+      const ms = t.match(/(\d{1,2}:\d{2})\s*試合開始/);
+      const mo = t.match(/（(\d{1,2}:\d{2})\s*開場）/);
+      return {
+        date: md ? `${md[1]}-${String(md[2]).padStart(2, '0')}-${String(md[3]).padStart(2, '0')}` : '',
+        open: mo ? mo[1] : '',
+        start: ms ? ms[1] : ''
+      };
+    }).filter(d => d.date || d.open || d.start);
+    if (S.dates.length) {
+      S.date = S.dates[0].date; S.open = S.dates[0].open; S.start = S.dates[0].start;
+    }
   }
   const cardTd = cell('対戦カード');
   if (cardTd) {
@@ -1780,8 +1973,22 @@ function parseRenderedHtml(text) {
   const ticketTd = cell('チケット');
   if (ticketTd) S.ticket = ticketTd.textContent.trim();
 
+  /* 背景パターン・細かな演出・ティッカー */
+  const heroEl = q('.mpg-hero');
+  S.heroBg = (heroEl && heroEl.getAttribute('data-bg')) || 'rays';
+  S.heroFx = !(heroEl && heroEl.getAttribute('data-fx') === 'off');
+  S.calm = game.getAttribute('data-anim') === 'calm';
+  S.tickerShow = !!q('.mpg-ticker');
+  const tickEl = q('.mpg-ticker-track span');
+  if (tickEl) {
+    const marked = tickEl.innerHTML.replace(/<b>(.*?)<\/b>/gi, '*$1*').replace(/<[^>]+>/g, '');
+    S.ticker = new DOMParser().parseFromString(marked, 'text/html').body.textContent.trim();
+  }
+
   /* 画像・マスコット */
   S.poster = src(q('.mpg-poster img'));
+  S.posterOrient = q('.mpg-poster') && q('.mpg-poster').classList.contains('mpg-poster--portrait')
+    ? 'portrait' : 'landscape';
   S.stadiumImg = src(q('.mpg-access-photo'));
   const mascotEls = [...game.querySelectorAll('.mpg-mascots .mpg-mascot')];
   if (mascotEls[0]) S.mascotL = src(mascotEls[0].querySelector('img'));
@@ -1891,6 +2098,7 @@ function restore() {
   let S = null;
   try { S = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch (e) { S = null; }
   if (!S) {
+    fillDates();
     fillSections(SECTION_DEFAULTS);
     return;
   }
@@ -1900,7 +2108,9 @@ function restore() {
 /* 状態オブジェクト → フォーム全体へ反映（自動保存の復元・呼び出し・ファイル読込で共用） */
 function applyState(S) {
   const set = (id, v) => { if (v !== undefined) $(id).value = v; };
-  set('f-date', S.date); set('f-eyebrow', S.eyebrow); set('f-daybadge', S.dayBadge);
+  /* 日程（旧データは date/open/start の1件から復元） */
+  fillDates(S.dates?.length ? S.dates : [{ date: S.date || '', open: S.open || '', start: S.start || '' }]);
+  set('f-eyebrow', S.eyebrow); set('f-daybadge', S.dayBadge);
   $('f-opponent').value = S.oppSel || '香川オリーブガイナーズ';
   set('f-opp-name', S.oppSel === '__other' ? S.oppName : '');
   set('f-opp-en', S.oppSel === '__other' ? S.oppEn : '');
@@ -1908,10 +2118,16 @@ function applyState(S) {
   $('f-stadium').value = S.stSel || '坊っちゃんスタジアム';
   set('f-stadium-name', S.stSel === '__other' ? S.stadium : '');
   set('f-addr', S.addr); set('f-access', S.access);
-  set('f-open', S.open); set('f-start', S.start); set('f-chip', S.chip);
+  set('f-chip', S.chip);
   set('f-ticket', S.ticket); set('f-poster', S.poster); set('f-stadium-img', S.stadiumImg);
   $('f-theme').value = (THEME_PRESETS[S.themeSel] || S.themeSel === '__custom') ? S.themeSel : 'orange';
   set('f-theme-color', S.themeCustom);
+  $('f-hero-bg').value = S.heroBg || 'rays';
+  $('f-hero-fx').checked = S.heroFx !== false;
+  $('f-calm').checked = !!S.calm;
+  $('f-ticker-show').checked = S.tickerShow !== false;
+  set('f-ticker', S.ticker !== undefined ? S.ticker : TICKER_DEFAULT);
+  $('f-poster-orient').value = S.posterOrient === 'portrait' ? 'portrait' : 'landscape';
   set('f-mascot-l', S.mascotL); set('f-mascot-r', S.mascotR); set('f-bubble', S.bubble);
   $('f-bubble-side').value = S.bubbleSide === 'right' ? 'right' : 'left';
   set('f-notes', S.notes);
@@ -1944,6 +2160,21 @@ $('f-stadium').addEventListener('change', () => {
   refresh();
 });
 $('f-opponent').addEventListener('change', () => { toggleCustomFields(); refresh(); });
+
+$('add-date').addEventListener('click', () => {
+  const last = [...document.querySelectorAll('#dates .date-row')].pop();
+  const get = k => last ? last.querySelector(`[data-d="${k}"]`).value : '';
+  /* 直前の行の翌日・同じ時刻を初期値にする（連戦の入力を楽にする） */
+  let next = '';
+  const base = get('date');
+  if (base) {
+    const [y, m, d] = base.split('-').map(Number);
+    const dt = new Date(y, m - 1, d + 1);
+    next = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+  }
+  addDateRow({ date: next, open: get('open'), start: get('start') });
+  refresh();
+});
 
 $('add-section').addEventListener('click', () => {
   addSection({ title: '', en: '', intro: '', layout: 'cards', items: [{}] });
