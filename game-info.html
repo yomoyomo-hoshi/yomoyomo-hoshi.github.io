@@ -257,9 +257,10 @@
   }
 
   /* マスコット（チーム名の上に並ぶ） */
-  /* 複数日開催のとき：日付を並べるので少し小さく */
-  .mpg-hero-date--multi { font-size: clamp(34px, 7.2vw, 62px); }
-  .mpg-hero-date i { font-style: normal; opacity: 0.6; margin: 0 0.14em; }
+  /* 複数日開催のとき：日付を並べるので少し小さく（1日分の中では改行させない） */
+  .mpg-hero-date--multi { font-size: clamp(26px, 4.4vw, 44px); }
+  .mpg-hero-day { white-space: nowrap; }
+  .mpg-hero-date i { font-style: normal; opacity: 0.6; }
 
   /* 複数日開催の日程ブロック（各日の開場・開始） */
   .mpg-hero-sched {

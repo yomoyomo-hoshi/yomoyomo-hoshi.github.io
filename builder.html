@@ -889,9 +889,10 @@ const TEMPLATE_CSS = `
     background-clip: text;
     color: transparent;
   }
-  /* 複数日開催のとき：日付を並べるので少し小さく */
-  .mpg-hero-date--multi { font-size: clamp(34px, 7.2vw, 62px); }
-  .mpg-hero-date i { font-style: normal; opacity: 0.6; margin: 0 0.14em; }
+  /* 複数日開催のとき：日付を並べるので少し小さく（1日分の中では改行させない） */
+  .mpg-hero-date--multi { font-size: clamp(26px, 4.4vw, 44px); }
+  .mpg-hero-day { white-space: nowrap; }
+  .mpg-hero-date i { font-style: normal; opacity: 0.6; }
 
   /* 複数日開催の日程ブロック（各日の開場・開始） */
   .mpg-hero-sched {
@@ -1575,8 +1576,11 @@ function buildBody(S) {
     .map(d => ({ open: d.open || '', start: d.start || '', p: parseDate(d.date) }))
     .filter(d => d.p || d.open || d.start);
   const multiDay = days.length > 1;
-  const heroDate = days.map(d => (d.p ? `${d.p.m}.${d.p.d} <small>${d.p.en}</small>` : ''))
-    .filter(Boolean).join('<i>/</i>') || '-.-';
+  const dayChunks = days.map(d => (d.p ? `${d.p.m}.${d.p.d} <small>${d.p.en}</small>` : '')).filter(Boolean);
+  /* 複数日は1日分を nowrap でくくり、日付と日付の間だけで折り返す */
+  const heroDate = (multiDay
+    ? dayChunks.map(c => `<span class="mpg-hero-day">${c}</span>`).join('<i> / </i>')
+    : dayChunks.join('')) || '-.-';
   const tableDates = days.map(d => (d.p
     ? `${d.p.y}年${d.p.m}月${d.p.d}日（${d.p.ja}）${d.start ? ` ${esc(d.start)}試合開始` : ''}${d.open ? `（${esc(d.open)}開場）` : ''}`
     : '')).filter(Boolean).join('<br>');
