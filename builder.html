@@ -236,7 +236,25 @@
   /* リスト形式のときは内容以外の入力欄を隠す */
   .sec-box[data-layout="list"] .row input[data-k="badge"],
   .sec-box[data-layout="list"] .row input[data-k="desc"],
-  .sec-box[data-layout="list"] .row input[data-k="img"] { display: none; }
+  .sec-box[data-layout="list"] .row .img-list,
+  .sec-box[data-layout="list"] .row .add-img { display: none; }
+
+  /* 項目ごとの画像リスト（複数枚OK） */
+  .img-list { display: flex; flex-direction: column; gap: 6px; }
+  .img-row { display: flex; gap: 6px; align-items: center; }
+  .img-row input { margin-bottom: 0; }
+  .img-row .imgdel {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 6px;
+    width: 26px; height: 32px;
+    flex-shrink: 0;
+    cursor: pointer;
+    color: var(--sub);
+    font-size: 12px;
+  }
+  .img-row .imgdel:hover { color: #dc2626; }
+  .add-img { margin-top: 6px; padding: 5px; font-size: 11.5px; }
 
   @media (max-width: 1000px) {
     .wrap { flex-direction: column; }
@@ -446,6 +464,15 @@
           </div>
         </div>
         <div class="grid2">
+          <div class="field">
+            <label>マスコット画像の大きさ</label>
+            <select id="f-mascot-size">
+              <option value="s">小さめ</option>
+              <option value="m">標準</option>
+              <option value="l">大きめ</option>
+              <option value="xl">特大</option>
+            </select>
+          </div>
           <div class="field">
             <label>マスコットの吹き出し<span class="opt">空欄で非表示</span></label>
             <input type="text" id="f-bubble" value="みんな来てね！">
@@ -889,9 +916,11 @@ const TEMPLATE_CSS = `
     background-clip: text;
     color: transparent;
   }
+  /* テーマ側が small を block にしていても曜日を同じ行に保つ（重要） */
+  .mp-game .mpg-hero-date small { display: inline; }
   /* 複数日開催のとき：日付を並べるので少し小さく（1日分の中では改行させない） */
   .mpg-hero-date--multi { font-size: clamp(26px, 4.4vw, 44px); }
-  .mpg-hero-day { white-space: nowrap; }
+  .mp-game .mpg-hero-day { white-space: nowrap; display: inline-block; }
   .mpg-hero-date i { font-style: normal; opacity: 0.6; }
 
   /* 複数日開催の日程ブロック（各日の開場・開始） */
@@ -1156,6 +1185,71 @@ const TEMPLATE_CSS = `
     transition: transform 0.3s ease;
   }
   .mpg-mini:hover .mpg-mini-photo img { transform: scale(1.05); }
+
+  /* ---- 写真：クリックで拡大／複数枚は横スクロール ---- */
+  .mpg-shot { display: block; cursor: zoom-in; position: relative; }
+  .mpg-shots {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  .mpg-shots .mpg-shot { flex: 0 0 100%; scroll-snap-align: start; }
+  .mpg-shots::-webkit-scrollbar { height: 6px; }
+  .mpg-shots::-webkit-scrollbar-thumb { background: rgba(var(--mp-orange-rgb), 0.5); border-radius: 3px; }
+  .mpg-mini-photo { position: relative; }
+  .mpg-shots-badge {
+    position: absolute;
+    right: 8px; bottom: 8px;
+    z-index: 2;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(16, 28, 51, 0.78);
+    color: var(--mp-white);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    pointer-events: none;
+  }
+
+  /* ---- 拡大表示（クリックで開く・JavaScript不要） ---- */
+  .mpg-lb {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    padding: 28px;
+    background: rgba(8, 12, 20, 0.9);
+    align-items: center;
+    justify-content: center;
+  }
+  .mpg-lb:target { display: flex; }
+  .mpg-lb-bg { position: absolute; inset: 0; cursor: zoom-out; }
+  .mpg-lb img {
+    position: relative;
+    width: auto;
+    max-width: min(1040px, 94vw);
+    max-height: 86vh;
+    border-radius: 10px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+  }
+  .mpg-lb-x {
+    position: absolute;
+    top: 16px; right: 18px;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    color: var(--mp-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .mpg-lb-x:hover { background: rgba(255, 255, 255, 0.32); }
   .mpg-mini-badge {
     display: inline-block;
     padding: 3px 14px;
@@ -1403,7 +1497,24 @@ function addItemRow(rowsBox, data = {}) {
     '<input type="text" data-k="title" placeholder="内容・タイトル" value="' + esc(data.title || '') + '">' +
     '<input type="text" data-k="badge" placeholder="バッジ（例：先着400名様／3回裏終了後）" value="' + esc(data.badge || '') + '">' +
     '<input type="text" data-k="desc" placeholder="説明文（任意）" value="' + esc(data.desc || '') + '">' +
-    '<input type="url" data-k="img" placeholder="画像URL（任意） https://..." value="' + esc(data.img || '') + '">';
+    '<div class="img-list"></div>' +
+    '<button type="button" class="add-btn add-img">＋ 画像を追加</button>';
+
+  /* 画像は複数枚OK（2枚以上なら横スクロール表示になる） */
+  const imgList = row.querySelector('.img-list');
+  const addImgInput = (url = '') => {
+    const ir = document.createElement('div');
+    ir.className = 'img-row';
+    ir.innerHTML =
+      '<input type="url" data-img placeholder="画像URL（任意） https://..." value="' + esc(url) + '">' +
+      '<button type="button" class="imgdel" title="この画像を削除">✕</button>';
+    ir.querySelector('.imgdel').addEventListener('click', () => { ir.remove(); refresh(); });
+    imgList.appendChild(ir);
+  };
+  const initial = (data.imgs && data.imgs.length) ? data.imgs : (data.img ? [data.img] : ['']);
+  initial.forEach(addImgInput);
+  row.querySelector('.add-img').addEventListener('click', () => { addImgInput(); refresh(); });
+
   row.querySelector('.del').addEventListener('click', () => { row.remove(); refresh(); });
   row.querySelectorAll('.rmv').forEach(b => b.addEventListener('click', () => {
     const dir = Number(b.dataset.mv);
@@ -1464,8 +1575,10 @@ function readSections() {
     items: [...box.querySelectorAll('.sec-rows .row')].map(row => {
       const o = {};
       row.querySelectorAll('[data-k]').forEach(i => { o[i.dataset.k] = i.value.trim(); });
+      o.imgs = [...row.querySelectorAll('.img-list [data-img]')].map(i => i.value.trim()).filter(Boolean);
+      o.img = o.imgs[0] || '';   /* 旧形式との互換 */
       return o;
-    }).filter(o => Object.values(o).some(v => v))
+    }).filter(o => o.title || o.badge || o.desc || o.imgs.length)
   })).filter(s => s.title || s.intro || s.items.length);
 }
 
@@ -1550,6 +1663,7 @@ function collect() {
     stadiumImg: $('f-stadium-img').value.trim(),
     mascotL: $('f-mascot-l').value.trim(),
     mascotR: $('f-mascot-r').value.trim(),
+    mascotSize: $('f-mascot-size').value,
     bubble: $('f-bubble').value.trim(),
     bubbleSide: $('f-bubble-side').value,
     sections: readSections(),
@@ -1588,13 +1702,41 @@ function buildBody(S) {
   const mapUrl = 'https://maps.google.com/?q=' + encodeURIComponent(S.stadium || '');
   /* 「先着」を含むバッジはオレンジ、それ以外はネイビー */
   const badgeCls = b => 'mpg-mini-badge' + (b.includes('先着') ? ' mpg-mini-badge--orange' : '');
-  const minicard = r => `
-      <div class="mpg-mini">
-        ${r.img ? `<div class="mpg-mini-photo"><img src="${esc(r.img)}" alt="${esc(r.title || '')}"></div>` : ''}
+
+  /* 写真：クリックで拡大（拡大パネルは最後にまとめて出力）。複数枚は横スクロール */
+  const lightboxes = [];
+  let lbSeq = 0;
+  const shotHtml = (url, alt, cardId) => {
+    const id = `mpg-lb-${++lbSeq}`;
+    lightboxes.push(`
+  <div class="mpg-lb" id="${id}">
+    <a class="mpg-lb-bg" href="#${cardId}" aria-label="閉じる"></a>
+    <img src="${esc(url)}" alt="${esc(alt)}">
+    <a class="mpg-lb-x" href="#${cardId}" aria-label="閉じる">✕</a>
+  </div>`);
+    return `<a class="mpg-shot" href="#${id}"><img src="${esc(url)}" alt="${esc(alt)}"></a>`;
+  };
+  let cardSeq = 0;
+  const minicard = r => {
+    const imgs = (r.imgs && r.imgs.length) ? r.imgs.filter(Boolean) : (r.img ? [r.img] : []);
+    const cardId = `mpg-card-${++cardSeq}`;
+    let photo = '';
+    if (imgs.length === 1) {
+      photo = `<div class="mpg-mini-photo">${shotHtml(imgs[0], r.title || '', cardId)}</div>`;
+    } else if (imgs.length > 1) {
+      photo = `<div class="mpg-mini-photo">
+          <div class="mpg-shots">${imgs.map(u => shotHtml(u, r.title || '', cardId)).join('')}</div>
+          <span class="mpg-shots-badge">${imgs.length}枚 ▶</span>
+        </div>`;
+    }
+    return `
+      <div class="mpg-mini" id="${cardId}">
+        ${photo}
         ${r.badge ? `<span class="${badgeCls(r.badge)}">${esc(r.badge)}</span>` : ''}
         ${r.title ? `<h4>${esc(r.title)}</h4>` : ''}
         ${r.desc ? `<p>${esc(r.desc)}</p>` : ''}
       </div>`;
+  };
 
   /* マスコット（チーム名の上・吹き出しは選択した側に） */
   let leftBubble = '', rightBubble = '';
@@ -1605,10 +1747,18 @@ function buildBody(S) {
     else if (S.mascotL) leftBubble = b;
     else if (S.mascotR) rightBubble = b;
   }
+  /* マスコットの大きさ（標準はCSSのまま＝従来と同一出力） */
+  const MASCOT_W = {
+    s: 'clamp(62px, 12%, 98px)',
+    l: 'clamp(104px, 20%, 168px)',
+    xl: 'clamp(122px, 26%, 210px)'
+  };
+  const mw = MASCOT_W[S.mascotSize];
+  const mAttr = mw ? ` style="width:${mw}"` : '';
   const mascots = (S.mascotL || S.mascotR) ? `
     <div class="mpg-mascots">
-      ${S.mascotL ? `<div class="mpg-mascot">${leftBubble}<img src="${esc(S.mascotL)}" alt="マスコット"></div>` : ''}
-      ${S.mascotR ? `<div class="mpg-mascot">${rightBubble}<img src="${esc(S.mascotR)}" alt="マスコット"></div>` : ''}
+      ${S.mascotL ? `<div class="mpg-mascot"${mAttr}>${leftBubble}<img src="${esc(S.mascotL)}" alt="マスコット"></div>` : ''}
+      ${S.mascotR ? `<div class="mpg-mascot"${mAttr}>${rightBubble}<img src="${esc(S.mascotR)}" alt="マスコット"></div>` : ''}
     </div>` : '';
 
   /* ---- 時刻表示（1日＝従来のチップ／複数日＝日ごとの行） ---- */
@@ -1798,6 +1948,9 @@ function buildBody(S) {
       ${S.snsNote ? `<a class="mpg-sns-btn mpg-sns-btn--note" href="${esc(S.snsNote)}">note</a>` : ''}
     </div>
   </div>`;
+
+  /* ---- 写真の拡大パネル（カードの外にまとめて置く） ---- */
+  if (lightboxes.length) h += '\n' + lightboxes.join('');
 
   return `<div class="mp-game"${themeStyleAttr(S)}${S.calm ? ' data-anim="calm"' : ''}>${h}\n</div>`;
 }
@@ -1997,6 +2150,10 @@ function parseRenderedHtml(text) {
   const mascotEls = [...game.querySelectorAll('.mpg-mascots .mpg-mascot')];
   if (mascotEls[0]) S.mascotL = src(mascotEls[0].querySelector('img'));
   if (mascotEls[1]) S.mascotR = src(mascotEls[1].querySelector('img'));
+  /* マスコットの大きさ（インラインstyleの最小幅から判定） */
+  const mStyle = mascotEls[0] ? (mascotEls[0].getAttribute('style') || '') : '';
+  const mMin = mStyle.match(/clamp\(\s*(\d+)px/);
+  S.mascotSize = !mMin ? 'm' : (Number(mMin[1]) <= 70 ? 's' : Number(mMin[1]) >= 120 ? 'xl' : 'l');
   const bub = q('.mpg-bubble');
   if (bub) { S.bubble = bub.textContent.trim(); S.bubbleSide = bub.closest('.mpg-mascot') === mascotEls[1] ? 'right' : 'left'; }
 
@@ -2006,12 +2163,16 @@ function parseRenderedHtml(text) {
     let layout = 'list', items = [];
     if (sec.querySelector('.mpg-cards')) {
       layout = 'cards';
-      items = [...sec.querySelectorAll('.mpg-mini')].map(m => ({
-        img: src(m.querySelector('.mpg-mini-photo img')),
-        badge: txt(m.querySelector('.mpg-mini-badge')),
-        title: txt(m.querySelector('h4')),
-        desc: txt(m.querySelector('p'))
-      }));
+      items = [...sec.querySelectorAll('.mpg-mini')].map(m => {
+        const imgs = [...m.querySelectorAll('.mpg-mini-photo img')].map(i => i.getAttribute('src') || '').filter(Boolean);
+        return {
+          imgs,
+          img: imgs[0] || '',
+          badge: txt(m.querySelector('.mpg-mini-badge')),
+          title: txt(m.querySelector('h4')),
+          desc: txt(m.querySelector('p'))
+        };
+      });
     } else {
       items = [...sec.querySelectorAll('.mpg-list li')].map(li => ({ title: li.textContent.trim() }));
     }
@@ -2133,6 +2294,7 @@ function applyState(S) {
   set('f-ticker', S.ticker !== undefined ? S.ticker : TICKER_DEFAULT);
   $('f-poster-orient').value = S.posterOrient === 'portrait' ? 'portrait' : 'landscape';
   set('f-mascot-l', S.mascotL); set('f-mascot-r', S.mascotR); set('f-bubble', S.bubble);
+  $('f-mascot-size').value = ['s', 'm', 'l', 'xl'].includes(S.mascotSize) ? S.mascotSize : 'm';
   $('f-bubble-side').value = S.bubbleSide === 'right' ? 'right' : 'left';
   set('f-notes', S.notes);
   $('f-live-show').checked = S.liveShow !== false;

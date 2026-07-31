@@ -257,9 +257,11 @@
   }
 
   /* マスコット（チーム名の上に並ぶ） */
+  /* テーマ側が small を block にしていても曜日を同じ行に保つ（重要） */
+  .mp-game .mpg-hero-date small { display: inline; }
   /* 複数日開催のとき：日付を並べるので少し小さく（1日分の中では改行させない） */
   .mpg-hero-date--multi { font-size: clamp(26px, 4.4vw, 44px); }
-  .mpg-hero-day { white-space: nowrap; }
+  .mp-game .mpg-hero-day { white-space: nowrap; display: inline-block; }
   .mpg-hero-date i { font-style: normal; opacity: 0.6; }
 
   /* 複数日開催の日程ブロック（各日の開場・開始） */
@@ -533,6 +535,70 @@
     transition: transform 0.3s ease;
   }
   .mpg-mini:hover .mpg-mini-photo img { transform: scale(1.05); }
+  /* ---- 写真：クリックで拡大／複数枚は横スクロール ---- */
+  .mpg-shot { display: block; cursor: zoom-in; position: relative; }
+  .mpg-shots {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  .mpg-shots .mpg-shot { flex: 0 0 100%; scroll-snap-align: start; }
+  .mpg-shots::-webkit-scrollbar { height: 6px; }
+  .mpg-shots::-webkit-scrollbar-thumb { background: rgba(var(--mp-orange-rgb), 0.5); border-radius: 3px; }
+  .mpg-mini-photo { position: relative; }
+  .mpg-shots-badge {
+    position: absolute;
+    right: 8px; bottom: 8px;
+    z-index: 2;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(16, 28, 51, 0.78);
+    color: var(--mp-white);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    pointer-events: none;
+  }
+
+  /* ---- 拡大表示（クリックで開く・JavaScript不要） ---- */
+  .mpg-lb {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    padding: 28px;
+    background: rgba(8, 12, 20, 0.9);
+    align-items: center;
+    justify-content: center;
+  }
+  .mpg-lb:target { display: flex; }
+  .mpg-lb-bg { position: absolute; inset: 0; cursor: zoom-out; }
+  .mpg-lb img {
+    position: relative;
+    width: auto;
+    max-width: min(1040px, 94vw);
+    max-height: 86vh;
+    border-radius: 10px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+  }
+  .mpg-lb-x {
+    position: absolute;
+    top: 16px; right: 18px;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    color: var(--mp-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .mpg-lb-x:hover { background: rgba(255, 255, 255, 0.32); }
   .mpg-mini-badge {
     display: inline-block;
     padding: 3px 14px;
