@@ -1186,8 +1186,58 @@ const TEMPLATE_CSS = `
   }
   .mpg-mini:hover .mpg-mini-photo img { transform: scale(1.05); }
 
-  /* ---- 写真：クリックで拡大／複数枚は横スクロール ---- */
-  .mpg-shot { display: block; cursor: zoom-in; position: relative; }
+  /* ---- 写真：クリックで拡大／複数枚は横スクロール ----
+     ページ内リンク（#）を使うとテーマ側のスクロール処理に奪われるため、
+     リンクを使わない details/summary 方式にしている（JavaScript不要） */
+  .mpg-shot { display: block; position: relative; }
+  .mpg-shot > summary {
+    display: block;
+    cursor: zoom-in;
+    list-style: none;
+  }
+  .mpg-shot > summary::-webkit-details-marker { display: none; }
+  .mpg-shot > summary::marker { content: ""; }
+  /* 開いている間はカード内の高さを保ってレイアウトのガタつきを防ぐ */
+  .mpg-shot[open] { aspect-ratio: 16 / 10; }
+  /* 開いたら画面いっぱいの拡大表示に（画像全体が見えるよう contain） */
+  .mp-game .mpg-shot[open] > summary {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    margin: 0;
+    padding: 26px;
+    background: rgba(8, 12, 20, 0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-out;
+  }
+  .mp-game .mpg-shot[open] > summary img {
+    width: auto;
+    height: auto;
+    max-width: min(1100px, 94vw);
+    max-height: 88vh;
+    aspect-ratio: auto;
+    object-fit: contain;
+    border-radius: 10px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+  }
+  .mpg-shot[open] > summary::after {
+    content: "✕";
+    position: absolute;
+    top: 16px; right: 20px;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    color: var(--mp-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+  }
+  /* 拡大中はカードの浮き上がり演出を止める（fixed の基準がずれるのを防ぐ） */
+  .mpg-mini:has(.mpg-shot[open]) { transform: none !important; }
   .mpg-shots {
     display: flex;
     gap: 4px;
@@ -1214,42 +1264,6 @@ const TEMPLATE_CSS = `
     pointer-events: none;
   }
 
-  /* ---- 拡大表示（クリックで開く・JavaScript不要） ---- */
-  .mpg-lb {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 99999;
-    padding: 28px;
-    background: rgba(8, 12, 20, 0.9);
-    align-items: center;
-    justify-content: center;
-  }
-  .mpg-lb:target { display: flex; }
-  .mpg-lb-bg { position: absolute; inset: 0; cursor: zoom-out; }
-  .mpg-lb img {
-    position: relative;
-    width: auto;
-    max-width: min(1040px, 94vw);
-    max-height: 86vh;
-    border-radius: 10px;
-    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
-  }
-  .mpg-lb-x {
-    position: absolute;
-    top: 16px; right: 18px;
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.18);
-    color: var(--mp-white);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    font-weight: 700;
-    line-height: 1;
-  }
-  .mpg-lb-x:hover { background: rgba(255, 255, 255, 0.32); }
   .mpg-mini-badge {
     display: inline-block;
     padding: 3px 14px;
@@ -1703,34 +1717,22 @@ function buildBody(S) {
   /* 「先着」を含むバッジはオレンジ、それ以外はネイビー */
   const badgeCls = b => 'mpg-mini-badge' + (b.includes('先着') ? ' mpg-mini-badge--orange' : '');
 
-  /* 写真：クリックで拡大（拡大パネルは最後にまとめて出力）。複数枚は横スクロール */
-  const lightboxes = [];
-  let lbSeq = 0;
-  const shotHtml = (url, alt, cardId) => {
-    const id = `mpg-lb-${++lbSeq}`;
-    lightboxes.push(`
-  <div class="mpg-lb" id="${id}">
-    <a class="mpg-lb-bg" href="#${cardId}" aria-label="閉じる"></a>
-    <img src="${esc(url)}" alt="${esc(alt)}">
-    <a class="mpg-lb-x" href="#${cardId}" aria-label="閉じる">✕</a>
-  </div>`);
-    return `<a class="mpg-shot" href="#${id}"><img src="${esc(url)}" alt="${esc(alt)}"></a>`;
-  };
-  let cardSeq = 0;
+  /* 写真：クリックで拡大（details方式＝リンクを使わないのでページが飛ばない）。複数枚は横スクロール */
+  const shotHtml = (url, alt) =>
+    `<details class="mpg-shot"><summary><img src="${esc(url)}" alt="${esc(alt)}"></summary></details>`;
   const minicard = r => {
     const imgs = (r.imgs && r.imgs.length) ? r.imgs.filter(Boolean) : (r.img ? [r.img] : []);
-    const cardId = `mpg-card-${++cardSeq}`;
     let photo = '';
     if (imgs.length === 1) {
-      photo = `<div class="mpg-mini-photo">${shotHtml(imgs[0], r.title || '', cardId)}</div>`;
+      photo = `<div class="mpg-mini-photo">${shotHtml(imgs[0], r.title || '')}</div>`;
     } else if (imgs.length > 1) {
       photo = `<div class="mpg-mini-photo">
-          <div class="mpg-shots">${imgs.map(u => shotHtml(u, r.title || '', cardId)).join('')}</div>
+          <div class="mpg-shots">${imgs.map(u => shotHtml(u, r.title || '')).join('')}</div>
           <span class="mpg-shots-badge">${imgs.length}枚 ▶</span>
         </div>`;
     }
     return `
-      <div class="mpg-mini" id="${cardId}">
+      <div class="mpg-mini">
         ${photo}
         ${r.badge ? `<span class="${badgeCls(r.badge)}">${esc(r.badge)}</span>` : ''}
         ${r.title ? `<h4>${esc(r.title)}</h4>` : ''}
@@ -1948,9 +1950,6 @@ function buildBody(S) {
       ${S.snsNote ? `<a class="mpg-sns-btn mpg-sns-btn--note" href="${esc(S.snsNote)}">note</a>` : ''}
     </div>
   </div>`;
-
-  /* ---- 写真の拡大パネル（カードの外にまとめて置く） ---- */
-  if (lightboxes.length) h += '\n' + lightboxes.join('');
 
   return `<div class="mp-game"${themeStyleAttr(S)}${S.calm ? ' data-anim="calm"' : ''}>${h}\n</div>`;
 }
