@@ -168,6 +168,18 @@
   .date-grid label { display: block; font-size: 11px; font-weight: 700; color: #374151; }
   .date-grid input { margin-top: 3px; }
 
+  /* ダブルヘッダー（同日2試合）の追加欄 */
+  .date-opt { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 9px; }
+  .date-opt label { display: block; font-size: 11px; font-weight: 700; color: #374151; }
+  .date-opt input, .date-opt select { margin-top: 3px; }
+  .date-opt .ck {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--navy);
+  }
+  .date-opt .ck input { width: auto; margin: 0; }
+  .date-row:not(.is-dh) .dh-only { display: none; }
+
   /* 項目の行 */
   .rows { display: flex; flex-direction: column; gap: 10px; }
   .row { border: 1px solid var(--line); border-radius: 8px; padding: 10px 84px 10px 10px; position: relative; background: #fff; }
@@ -308,7 +320,7 @@
           <input type="text" id="f-eyebrow" value="HOME GAME" placeholder="HOME GAME / NIGHT GAME など">
         </div>
         <div class="field">
-          <label>日程<span class="opt">連戦は「＋ 日程を追加」で複数日にできます</span></label>
+          <label>日程<span class="opt">連戦は「＋ 日程を追加」／同日2試合は「ダブルヘッダー」にチェック</span></label>
           <div class="rows" id="dates"></div>
           <button type="button" class="add-btn" id="add-date">＋ 日程を追加</button>
         </div>
@@ -413,6 +425,11 @@
               <option value="dots">ドット（水玉）</option>
               <option value="waves">波（同心円）</option>
               <option value="grid">グリッド（方眼）</option>
+              <option value="pinstripe">ピンストライプ（ユニフォーム風）</option>
+              <option value="checker">市松（チェッカーフラッグ風）</option>
+              <option value="chevron">ジグザグ（山形）</option>
+              <option value="halftone">ハーフトーン（下ほど粒が大きいドット）</option>
+              <option value="spotlight">ナイター照明（斜めの光）</option>
               <option value="plain">無地（グラデーションのみ）</option>
             </select>
           </div>
@@ -831,6 +848,51 @@ const TEMPLATE_CSS = `
       repeating-linear-gradient(90deg, rgba(255,255,255,0.13) 0 1.5px, transparent 1.5px 26px);
     animation: none;
   }
+  /* ---- 追加の背景パターン（2026-09） ---- */
+  .mpg-hero[data-bg="pinstripe"] .mpg-hero-rays,
+  .mpg-hero[data-bg="checker"] .mpg-hero-rays,
+  .mpg-hero[data-bg="chevron"] .mpg-hero-rays,
+  .mpg-hero[data-bg="halftone"] .mpg-hero-rays,
+  .mpg-hero[data-bg="spotlight"] .mpg-hero-rays { display: none; }
+  /* ピンストライプ（ユニフォーム風の細い縦じま） */
+  .mpg-hero[data-bg="pinstripe"] .mpg-hero-stripes {
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,0.20) 0 2px, transparent 2px 22px);
+    animation: none;
+  }
+  /* 市松（チェッカーフラッグ風） */
+  .mpg-hero[data-bg="checker"] .mpg-hero-stripes {
+    background:
+      linear-gradient(45deg, rgba(255,255,255,0.11) 25%, transparent 25% 75%, rgba(255,255,255,0.11) 75%) 0 0/44px 44px,
+      linear-gradient(45deg, rgba(255,255,255,0.11) 25%, transparent 25% 75%, rgba(255,255,255,0.11) 75%) 22px 22px/44px 44px;
+    animation: none;
+  }
+  /* ジグザグ（山形のシェブロン） */
+  .mpg-hero[data-bg="chevron"] .mpg-hero-stripes {
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.13) 25%, transparent 25%) -21px 0/42px 42px,
+      linear-gradient(225deg, rgba(255,255,255,0.13) 25%, transparent 25%) -21px 0/42px 42px,
+      linear-gradient(315deg, rgba(255,255,255,0.13) 25%, transparent 25%) 0 0/42px 42px,
+      linear-gradient( 45deg, rgba(255,255,255,0.13) 25%, transparent 25%) 0 0/42px 42px;
+    animation: none;
+  }
+  /* ハーフトーン（下ほど粒が大きく見える印刷風のドット） */
+  .mpg-hero[data-bg="halftone"] .mpg-hero-stripes {
+    background:
+      radial-gradient(rgba(255,255,255,0.30) 3.2px, transparent 3.6px) 0 0/26px 26px,
+      radial-gradient(rgba(255,255,255,0.18) 1.5px, transparent 1.9px) 13px 13px/26px 26px;
+    -webkit-mask-image: linear-gradient(to top, #000 0%, rgba(0,0,0,0.18) 68%, transparent 100%);
+    mask-image: linear-gradient(to top, #000 0%, rgba(0,0,0,0.18) 68%, transparent 100%);
+    animation: none;
+  }
+  /* ナイター照明（左右の上から降りそそぐ光の柱） */
+  .mpg-hero[data-bg="spotlight"] .mpg-hero-stripes {
+    background:
+      repeating-conic-gradient(from 24deg at 10% -22%, rgba(255,255,255,0.17) 0deg 4deg, transparent 4deg 13deg),
+      repeating-conic-gradient(from 143deg at 90% -22%, rgba(255,255,255,0.17) 0deg 4deg, transparent 4deg 13deg);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.25) 78%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.25) 78%, transparent 100%);
+    animation: none;
+  }
   /* 紙吹雪・浮遊絵文字のON/OFF */
   .mpg-hero[data-fx="off"] .mpg-confetti,
   .mpg-hero[data-fx="off"] .mpg-fx { display: none; }
@@ -1052,6 +1114,13 @@ const TEMPLATE_CSS = `
     border-color: var(--mp-navy);
   }
   .mpg-time-chip--fill strong { color: var(--mp-yellow); }
+  /* ダブルヘッダー・イニング数の注記チップ（白の縁取りだけの控えめな見た目） */
+  .mpg-time-chip--note {
+    background: rgba(16, 28, 51, 0.34);
+    border-style: dashed;
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
+  }
 
   .mpg-ticker {
     margin-top: 12px;
@@ -1606,14 +1675,38 @@ function fillSections(arr) {
 ================================================================ */
 function addDateRow(data = {}) {
   const row = document.createElement('div');
-  row.className = 'row date-row';
+  row.className = 'row date-row' + (data.dh ? ' is-dh' : '');
+  const inn = String(data.innings || '');
+  const opt = v => (inn === v ? ' selected' : '');
   row.innerHTML =
     '<button type="button" class="del" title="この日程を削除">✕</button>' +
     '<div class="date-grid">' +
       '<label>試合日<input type="date" data-d="date" value="' + esc(data.date || '') + '"></label>' +
       '<label>開場<input type="time" data-d="open" value="' + esc(data.open || '') + '"></label>' +
-      '<label>試合開始<input type="time" data-d="start" value="' + esc(data.start || '') + '"></label>' +
+      '<label class="lb-start">' + (data.dh ? '第1試合開始' : '試合開始') +
+        '<input type="time" data-d="start" value="' + esc(data.start || '') + '"></label>' +
+    '</div>' +
+    '<div class="date-opt">' +
+      '<label class="ck"><input type="checkbox" data-d="dh"' + (data.dh ? ' checked' : '') + '>' +
+        'ダブルヘッダー（同じ日に2試合）</label>' +
+      '<label class="dh-only">第2試合開始<input type="time" data-d="start2" value="' + esc(data.start2 || '') + '"></label>' +
+      '<label>イニング数<select data-d="innings">' +
+        '<option value=""' + opt('') + '>表示しない（通常の9回制）</option>' +
+        '<option value="7"' + opt('7') + '>7回制</option>' +
+        '<option value="9"' + opt('9') + '>9回制（明記する）</option>' +
+      '</select></label>' +
     '</div>';
+
+  /* ダブルヘッダーのON/OFF：第2試合欄の出し入れと、7回制の自動セット */
+  const dhBox = row.querySelector('[data-d="dh"]');
+  const innSel = row.querySelector('[data-d="innings"]');
+  dhBox.addEventListener('change', () => {
+    row.classList.toggle('is-dh', dhBox.checked);
+    row.querySelector('.lb-start').firstChild.nodeValue = dhBox.checked ? '第1試合開始' : '試合開始';
+    /* ダブルヘッダーは7回制が通例なので、未指定なら自動で7回制にする */
+    if (dhBox.checked && !innSel.value) innSel.value = '7';
+  });
+
   row.querySelector('.del').addEventListener('click', () => {
     if (document.querySelectorAll('#dates .date-row').length <= 1) {
       alert('日程は1つ以上必要です。日付を書き換えてご利用ください。');
@@ -1628,9 +1721,11 @@ function addDateRow(data = {}) {
 function readDates() {
   const arr = [...document.querySelectorAll('#dates .date-row')].map(row => {
     const o = {};
-    row.querySelectorAll('[data-d]').forEach(i => { o[i.dataset.d] = i.value; });
+    row.querySelectorAll('[data-d]').forEach(i => {
+      o[i.dataset.d] = i.type === 'checkbox' ? i.checked : i.value;
+    });
     return o;
-  }).filter(o => o.date || o.open || o.start);
+  }).filter(o => o.date || o.open || o.start || o.start2);
   return arr.length ? arr : [{ date: '', open: '', start: '' }];
 }
 
@@ -1701,17 +1796,39 @@ function buildBody(S) {
   /* ---- 日程（複数日対応。旧データは date/open/start から1件を組み立て） ---- */
   const rawDates = (S.dates && S.dates.length) ? S.dates : [{ date: S.date, open: S.open, start: S.start }];
   const days = rawDates
-    .map(d => ({ open: d.open || '', start: d.start || '', p: parseDate(d.date) }))
-    .filter(d => d.p || d.open || d.start);
+    .map(d => ({
+      open: d.open || '',
+      start: d.start || '',
+      /* ダブルヘッダー（同日2試合。通例7回制） */
+      dh: !!d.dh,
+      start2: d.dh ? (d.start2 || '') : '',
+      innings: String(d.innings || ''),
+      p: parseDate(d.date)
+    }))
+    .filter(d => d.p || d.open || d.start || d.start2);
   const multiDay = days.length > 1;
   const dayChunks = days.map(d => (d.p ? `${d.p.m}.${d.p.d} <small>${d.p.en}</small>` : '')).filter(Boolean);
   /* 複数日は1日分を nowrap でくくり、日付と日付の間だけで折り返す */
   const heroDate = (multiDay
     ? dayChunks.map(c => `<span class="mpg-hero-day">${c}</span>`).join('<i> / </i>')
     : dayChunks.join('')) || '-.-';
-  const tableDates = days.map(d => (d.p
-    ? `${d.p.y}年${d.p.m}月${d.p.d}日（${d.p.ja}）${d.start ? ` ${esc(d.start)}試合開始` : ''}${d.open ? `（${esc(d.open)}開場）` : ''}`
-    : '')).filter(Boolean).join('<br>');
+  /* ダブルヘッダー／イニング数の注記（例：ダブルヘッダー・2試合とも7回制） */
+  const dhNote = d => {
+    if (d.dh) return d.innings ? `ダブルヘッダー・2試合とも${d.innings}回制` : 'ダブルヘッダー（1日2試合）';
+    return d.innings ? `${d.innings}回制` : '';
+  };
+  const tableDates = days.map(d => {
+    if (!d.p) return '';
+    let t = `${d.p.y}年${d.p.m}月${d.p.d}日（${d.p.ja}）`;
+    if (d.dh) {
+      t += `${d.start ? `第1試合 ${esc(d.start)}試合開始` : ''}${d.open ? `（${esc(d.open)}開場）` : ''}` +
+           `${d.start2 ? `／第2試合 ${esc(d.start2)}試合開始` : ''}`;
+    } else {
+      t += `${d.start ? ` ${esc(d.start)}試合開始` : ''}${d.open ? `（${esc(d.open)}開場）` : ''}`;
+    }
+    const note = dhNote(d);
+    return t + (note ? ` ※${note}` : '');
+  }).filter(Boolean).join('<br>');
   const venueParen = S.addr ? `（${esc(S.addr)}）` : '';
   const mapUrl = 'https://maps.google.com/?q=' + encodeURIComponent(S.stadium || '');
   /* 「先着」を含むバッジはオレンジ、それ以外はネイビー */
@@ -1767,23 +1884,29 @@ function buildBody(S) {
   const chipHtml = S.chip
     ? `<span class="mpg-time-chip mpg-time-chip--fill">${esc(S.chip.split(' ')[0])}<strong>${esc(S.chip.split(' ').slice(1).join(' ') || '')}</strong></span>`
     : '';
+  /* 1日分の時刻チップ（ダブルヘッダーは第1試合・第2試合に分ける） */
+  const timeChips = d => {
+    const note = dhNote(d);
+    return (d.open ? `<span class="mpg-time-chip">開場<strong>${esc(d.open)}</strong></span>` : '') +
+      (d.start ? `<span class="mpg-time-chip mpg-time-chip--start">${d.dh ? '第1試合' : '試合開始'}<strong>${esc(d.start)}</strong></span>` : '') +
+      (d.start2 ? `<span class="mpg-time-chip mpg-time-chip--start">第2試合<strong>${esc(d.start2)}</strong></span>` : '') +
+      (note ? `<span class="mpg-time-chip mpg-time-chip--note">${esc(note)}</span>` : '');
+  };
   let timeArea;
   if (multiDay) {
     timeArea = `
     <div class="mpg-hero-sched">
       ${days.map(d => `<div class="mpg-sched-row">
         ${d.p ? `<span class="mpg-sched-day mp-en">${d.p.m}/${d.p.d}<em>${d.p.en}</em></span>` : ''}
-        ${d.open ? `<span class="mpg-time-chip">開場<strong>${esc(d.open)}</strong></span>` : ''}
-        ${d.start ? `<span class="mpg-time-chip mpg-time-chip--start">試合開始<strong>${esc(d.start)}</strong></span>` : ''}
+        ${timeChips(d)}
       </div>`).join('')}
       ${chipHtml ? `<div class="mpg-sched-row">${chipHtml}</div>` : ''}
     </div>`;
   } else {
-    const d0 = days[0] || { open: '', start: '' };
+    const d0 = days[0] || { open: '', start: '', dh: false, start2: '', innings: '' };
     timeArea = `
     <div class="mpg-hero-time">
-      ${d0.open ? `<span class="mpg-time-chip">開場<strong>${esc(d0.open)}</strong></span>` : ''}
-      ${d0.start ? `<span class="mpg-time-chip mpg-time-chip--start">試合開始<strong>${esc(d0.start)}</strong></span>` : ''}
+      ${timeChips(d0)}
       ${chipHtml}
     </div>`;
   }
@@ -2101,12 +2224,18 @@ function parseRenderedHtml(text) {
       const md = t.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
       const ms = t.match(/(\d{1,2}:\d{2})\s*試合開始/);
       const mo = t.match(/（(\d{1,2}:\d{2})\s*開場）/);
+      /* ダブルヘッダー（第2試合・イニング数の注記） */
+      const m2 = t.match(/第2試合\s*(\d{1,2}:\d{2})/);
+      const mi = t.match(/(\d+)\s*回制/);
       return {
         date: md ? `${md[1]}-${String(md[2]).padStart(2, '0')}-${String(md[3]).padStart(2, '0')}` : '',
         open: mo ? mo[1] : '',
-        start: ms ? ms[1] : ''
+        start: ms ? ms[1] : '',
+        dh: /ダブルヘッダー/.test(t),
+        start2: m2 ? m2[1] : '',
+        innings: mi ? mi[1] : ''
       };
-    }).filter(d => d.date || d.open || d.start);
+    }).filter(d => d.date || d.open || d.start || d.start2);
     if (S.dates.length) {
       S.date = S.dates[0].date; S.open = S.dates[0].open; S.start = S.dates[0].start;
     }

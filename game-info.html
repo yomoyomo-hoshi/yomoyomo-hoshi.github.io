@@ -164,6 +164,51 @@
       repeating-linear-gradient(90deg, rgba(255,255,255,0.13) 0 1.5px, transparent 1.5px 26px);
     animation: none;
   }
+  /* ---- 追加の背景パターン（2026-09） ---- */
+  .mpg-hero[data-bg="pinstripe"] .mpg-hero-rays,
+  .mpg-hero[data-bg="checker"] .mpg-hero-rays,
+  .mpg-hero[data-bg="chevron"] .mpg-hero-rays,
+  .mpg-hero[data-bg="halftone"] .mpg-hero-rays,
+  .mpg-hero[data-bg="spotlight"] .mpg-hero-rays { display: none; }
+  /* ピンストライプ（ユニフォーム風の細い縦じま） */
+  .mpg-hero[data-bg="pinstripe"] .mpg-hero-stripes {
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,0.20) 0 2px, transparent 2px 22px);
+    animation: none;
+  }
+  /* 市松（チェッカーフラッグ風） */
+  .mpg-hero[data-bg="checker"] .mpg-hero-stripes {
+    background:
+      linear-gradient(45deg, rgba(255,255,255,0.11) 25%, transparent 25% 75%, rgba(255,255,255,0.11) 75%) 0 0/44px 44px,
+      linear-gradient(45deg, rgba(255,255,255,0.11) 25%, transparent 25% 75%, rgba(255,255,255,0.11) 75%) 22px 22px/44px 44px;
+    animation: none;
+  }
+  /* ジグザグ（山形のシェブロン） */
+  .mpg-hero[data-bg="chevron"] .mpg-hero-stripes {
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.13) 25%, transparent 25%) -21px 0/42px 42px,
+      linear-gradient(225deg, rgba(255,255,255,0.13) 25%, transparent 25%) -21px 0/42px 42px,
+      linear-gradient(315deg, rgba(255,255,255,0.13) 25%, transparent 25%) 0 0/42px 42px,
+      linear-gradient( 45deg, rgba(255,255,255,0.13) 25%, transparent 25%) 0 0/42px 42px;
+    animation: none;
+  }
+  /* ハーフトーン（下ほど粒が大きく見える印刷風のドット） */
+  .mpg-hero[data-bg="halftone"] .mpg-hero-stripes {
+    background:
+      radial-gradient(rgba(255,255,255,0.30) 3.2px, transparent 3.6px) 0 0/26px 26px,
+      radial-gradient(rgba(255,255,255,0.18) 1.5px, transparent 1.9px) 13px 13px/26px 26px;
+    -webkit-mask-image: linear-gradient(to top, #000 0%, rgba(0,0,0,0.18) 68%, transparent 100%);
+    mask-image: linear-gradient(to top, #000 0%, rgba(0,0,0,0.18) 68%, transparent 100%);
+    animation: none;
+  }
+  /* ナイター照明（左右の上から降りそそぐ光の柱） */
+  .mpg-hero[data-bg="spotlight"] .mpg-hero-stripes {
+    background:
+      repeating-conic-gradient(from 24deg at 10% -22%, rgba(255,255,255,0.17) 0deg 4deg, transparent 4deg 13deg),
+      repeating-conic-gradient(from 143deg at 90% -22%, rgba(255,255,255,0.17) 0deg 4deg, transparent 4deg 13deg);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.25) 78%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.25) 78%, transparent 100%);
+    animation: none;
+  }
   /* 紙吹雪・浮遊絵文字のON/OFF */
   .mpg-hero[data-fx="off"] .mpg-confetti,
   .mpg-hero[data-fx="off"] .mpg-fx { display: none; }
@@ -396,6 +441,13 @@
     border-color: var(--mp-navy);
   }
   .mpg-time-chip--fill strong { color: var(--mp-yellow); }
+  /* ダブルヘッダー・イニング数の注記チップ（白の縁取りだけの控えめな見た目） */
+  .mpg-time-chip--note {
+    background: rgba(16, 28, 51, 0.34);
+    border-style: dashed;
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
+  }
 
   /* ============ 電光掲示板風ティッカー（イエロー） ============ */
   .mpg-ticker {
