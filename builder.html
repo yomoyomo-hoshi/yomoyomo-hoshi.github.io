@@ -178,6 +178,8 @@
     font-size: 12px; color: var(--navy);
   }
   .date-opt .ck input { width: auto; margin: 0; }
+  .date-opt .nt { grid-column: 1 / -1; }
+  .date-opt .nt .opt { font-weight: 500; color: #9ca3af; font-size: 10.5px; margin-left: 5px; }
   .date-row:not(.is-dh) .dh-only { display: none; }
 
   /* 項目の行 */
@@ -1673,11 +1675,19 @@ function fillSections(arr) {
 /* ================================================================
    日程（複数日開催に対応。1日なら従来と同じ出力）
 ================================================================ */
+/* ヒーロー・開催概要に出す注記の雛形（フォームで自由に書き換えられる） */
+function autoNote(dh, innings) {
+  const inn = String(innings || '');
+  if (dh) return inn ? `ダブルヘッダー・${inn}イニング制` : 'ダブルヘッダー（1日2試合）';
+  return inn ? `${inn}イニング制` : '';
+}
+
 function addDateRow(data = {}) {
   const row = document.createElement('div');
   row.className = 'row date-row' + (data.dh ? ' is-dh' : '');
   const inn = String(data.innings || '');
   const opt = v => (inn === v ? ' selected' : '');
+  const note = data.note !== undefined ? data.note : autoNote(!!data.dh, inn);
   row.innerHTML =
     '<button type="button" class="del" title="この日程を削除">✕</button>' +
     '<div class="date-grid">' +
@@ -1691,20 +1701,33 @@ function addDateRow(data = {}) {
         'ダブルヘッダー（同じ日に2試合）</label>' +
       '<label class="dh-only">第2試合開始<input type="time" data-d="start2" value="' + esc(data.start2 || '') + '"></label>' +
       '<label>イニング数<select data-d="innings">' +
-        '<option value=""' + opt('') + '>表示しない（通常の9回制）</option>' +
-        '<option value="7"' + opt('7') + '>7回制</option>' +
-        '<option value="9"' + opt('9') + '>9回制（明記する）</option>' +
+        '<option value=""' + opt('') + '>表示しない（通常の9イニング制）</option>' +
+        '<option value="7"' + opt('7') + '>7イニング制</option>' +
+        '<option value="9"' + opt('9') + '>9イニング制（明記する）</option>' +
       '</select></label>' +
+      '<label class="nt">注記の文章<span class="opt">自由に書き換えできます／空欄なら表示しません</span>' +
+        '<input type="text" data-d="note" value="' + esc(note) + '" placeholder="例：ダブルヘッダー・7イニング制"></label>' +
     '</div>';
 
-  /* ダブルヘッダーのON/OFF：第2試合欄の出し入れと、7回制の自動セット */
+  /* ダブルヘッダーのON/OFF：第2試合欄の出し入れと、7イニング制の自動セット */
   const dhBox = row.querySelector('[data-d="dh"]');
   const innSel = row.querySelector('[data-d="innings"]');
+  const noteIn = row.querySelector('[data-d="note"]');
+  /* 注記は雛形を入れておくが、手で書き換えたら以後は上書きしない */
+  noteIn.dataset.auto = (!note || note === autoNote(!!data.dh, inn)) ? '1' : '0';
+  noteIn.addEventListener('input', () => {
+    noteIn.dataset.auto = noteIn.value.trim() === '' ? '1' : '0';
+  });
+  const syncNote = () => {
+    if (noteIn.dataset.auto === '1') noteIn.value = autoNote(dhBox.checked, innSel.value);
+  };
+  innSel.addEventListener('change', syncNote);
   dhBox.addEventListener('change', () => {
     row.classList.toggle('is-dh', dhBox.checked);
     row.querySelector('.lb-start').firstChild.nodeValue = dhBox.checked ? '第1試合開始' : '試合開始';
-    /* ダブルヘッダーは7回制が通例なので、未指定なら自動で7回制にする */
+    /* ダブルヘッダーは7イニング制が通例なので、未指定なら自動で7にする */
     if (dhBox.checked && !innSel.value) innSel.value = '7';
+    syncNote();
   });
 
   row.querySelector('.del').addEventListener('click', () => {
@@ -1803,6 +1826,8 @@ function buildBody(S) {
       dh: !!d.dh,
       start2: d.dh ? (d.start2 || '') : '',
       innings: String(d.innings || ''),
+      /* 注記は自由入力。未設定の旧データだけ雛形から補う */
+      note: (d.note !== undefined ? d.note : autoNote(!!d.dh, d.innings)).trim(),
       p: parseDate(d.date)
     }))
     .filter(d => d.p || d.open || d.start || d.start2);
@@ -1812,11 +1837,6 @@ function buildBody(S) {
   const heroDate = (multiDay
     ? dayChunks.map(c => `<span class="mpg-hero-day">${c}</span>`).join('<i> / </i>')
     : dayChunks.join('')) || '-.-';
-  /* ダブルヘッダー／イニング数の注記（例：ダブルヘッダー・2試合とも7回制） */
-  const dhNote = d => {
-    if (d.dh) return d.innings ? `ダブルヘッダー・2試合とも${d.innings}回制` : 'ダブルヘッダー（1日2試合）';
-    return d.innings ? `${d.innings}回制` : '';
-  };
   const tableDates = days.map(d => {
     if (!d.p) return '';
     let t = `${d.p.y}年${d.p.m}月${d.p.d}日（${d.p.ja}）`;
@@ -1826,8 +1846,7 @@ function buildBody(S) {
     } else {
       t += `${d.start ? ` ${esc(d.start)}試合開始` : ''}${d.open ? `（${esc(d.open)}開場）` : ''}`;
     }
-    const note = dhNote(d);
-    return t + (note ? ` ※${note}` : '');
+    return t + (d.note ? ` ※${esc(d.note)}` : '');
   }).filter(Boolean).join('<br>');
   const venueParen = S.addr ? `（${esc(S.addr)}）` : '';
   const mapUrl = 'https://maps.google.com/?q=' + encodeURIComponent(S.stadium || '');
@@ -1885,13 +1904,11 @@ function buildBody(S) {
     ? `<span class="mpg-time-chip mpg-time-chip--fill">${esc(S.chip.split(' ')[0])}<strong>${esc(S.chip.split(' ').slice(1).join(' ') || '')}</strong></span>`
     : '';
   /* 1日分の時刻チップ（ダブルヘッダーは第1試合・第2試合に分ける） */
-  const timeChips = d => {
-    const note = dhNote(d);
-    return (d.open ? `<span class="mpg-time-chip">開場<strong>${esc(d.open)}</strong></span>` : '') +
-      (d.start ? `<span class="mpg-time-chip mpg-time-chip--start">${d.dh ? '第1試合' : '試合開始'}<strong>${esc(d.start)}</strong></span>` : '') +
-      (d.start2 ? `<span class="mpg-time-chip mpg-time-chip--start">第2試合<strong>${esc(d.start2)}</strong></span>` : '') +
-      (note ? `<span class="mpg-time-chip mpg-time-chip--note">${esc(note)}</span>` : '');
-  };
+  const timeChips = d =>
+    (d.open ? `<span class="mpg-time-chip">開場<strong>${esc(d.open)}</strong></span>` : '') +
+    (d.start ? `<span class="mpg-time-chip mpg-time-chip--start">${d.dh ? '第1試合' : '試合開始'}<strong>${esc(d.start)}</strong></span>` : '') +
+    (d.start2 ? `<span class="mpg-time-chip mpg-time-chip--start">第2試合<strong>${esc(d.start2)}</strong></span>` : '') +
+    (d.note ? `<span class="mpg-time-chip mpg-time-chip--note">${esc(d.note)}</span>` : '');
   let timeArea;
   if (multiDay) {
     timeArea = `
@@ -2224,16 +2241,18 @@ function parseRenderedHtml(text) {
       const md = t.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
       const ms = t.match(/(\d{1,2}:\d{2})\s*試合開始/);
       const mo = t.match(/（(\d{1,2}:\d{2})\s*開場）/);
-      /* ダブルヘッダー（第2試合・イニング数の注記） */
+      /* ダブルヘッダー（第2試合・注記・イニング数） */
       const m2 = t.match(/第2試合\s*(\d{1,2}:\d{2})/);
-      const mi = t.match(/(\d+)\s*回制/);
+      const mi = t.match(/(\d+)\s*(?:イニング制|回制)/);
+      const mn = t.match(/※\s*(.+)$/);
       return {
         date: md ? `${md[1]}-${String(md[2]).padStart(2, '0')}-${String(md[3]).padStart(2, '0')}` : '',
         open: mo ? mo[1] : '',
         start: ms ? ms[1] : '',
         dh: /ダブルヘッダー/.test(t),
         start2: m2 ? m2[1] : '',
-        innings: mi ? mi[1] : ''
+        innings: mi ? mi[1] : '',
+        note: mn ? mn[1].trim() : ''
       };
     }).filter(d => d.date || d.open || d.start || d.start2);
     if (S.dates.length) {
