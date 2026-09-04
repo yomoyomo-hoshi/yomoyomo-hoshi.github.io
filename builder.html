@@ -1555,6 +1555,22 @@ const esc = s => String(s ?? '')
   .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const lines = s => String(s ?? '').split('\n').map(l => l.trim()).filter(Boolean);
 
+/* テンプレートCSSから、あるセレクタの中身だけを取り出して1行にする。
+   選んだ背景パターンなどを style 属性にも書き出すために使う＝WordPressの
+   追加CSSが古いままでも、新しいパターンがそのまま出るようにするための保険。 */
+function cssDeclsFor(needle) {
+  const out = [];
+  const re = /([^{}]+)\{([^{}]*)\}/g;
+  let m;
+  while ((m = re.exec(TEMPLATE_CSS)) !== null) {
+    if (m[1].indexOf(needle) >= 0) out.push(m[2]);
+  }
+  return out.join(';')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split(';').map(s => s.replace(/\s+/g, ' ').trim()).filter(Boolean).join(';');
+}
+const styleAttr = d => (d ? ` style="${esc(d)}"` : '');
+
 const WEEK_EN = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const WEEK_JA = ['日', '月', '火', '水', '木', '金', '土'];
 function parseDate(v) {
@@ -1904,11 +1920,12 @@ function buildBody(S) {
     ? `<span class="mpg-time-chip mpg-time-chip--fill">${esc(S.chip.split(' ')[0])}<strong>${esc(S.chip.split(' ').slice(1).join(' ') || '')}</strong></span>`
     : '';
   /* 1日分の時刻チップ（ダブルヘッダーは第1試合・第2試合に分ける） */
+  const NOTE_STYLE = styleAttr(cssDeclsFor('.mpg-time-chip--note'));
   const timeChips = d =>
     (d.open ? `<span class="mpg-time-chip">開場<strong>${esc(d.open)}</strong></span>` : '') +
     (d.start ? `<span class="mpg-time-chip mpg-time-chip--start">${d.dh ? '第1試合' : '試合開始'}<strong>${esc(d.start)}</strong></span>` : '') +
     (d.start2 ? `<span class="mpg-time-chip mpg-time-chip--start">第2試合<strong>${esc(d.start2)}</strong></span>` : '') +
-    (d.note ? `<span class="mpg-time-chip mpg-time-chip--note">${esc(d.note)}</span>` : '');
+    (d.note ? `<span class="mpg-time-chip mpg-time-chip--note"${NOTE_STYLE}>${esc(d.note)}</span>` : '');
   let timeArea;
   if (multiDay) {
     timeArea = `
@@ -1932,14 +1949,19 @@ function buildBody(S) {
   const heroAttr =
     ((S.heroBg && S.heroBg !== 'rays') ? ` data-bg="${esc(S.heroBg)}"` : '') +
     (S.heroFx === false ? ' data-fx="off"' : '');
+  /* 背景パターンは style 属性にも書き出す（追加CSSが古くても選んだ柄が出るように）。
+     標準の集中線は従来どおり何も足さない＝過去の記事と同じ出力になる */
+  const bgKey = (S.heroBg && S.heroBg !== 'rays') ? S.heroBg : '';
+  const raysStyle = bgKey ? styleAttr(cssDeclsFor(`[data-bg="${bgKey}"] .mpg-hero-rays`)) : '';
+  const stripesStyle = bgKey ? styleAttr(cssDeclsFor(`[data-bg="${bgKey}"] .mpg-hero-stripes`)) : '';
 
   let h = '';
 
   /* ---- ヒーロー ---- */
   h += `
   <section class="mpg-hero"${heroAttr}>
-    <div class="mpg-hero-rays"></div>
-    <div class="mpg-hero-stripes"></div>
+    <div class="mpg-hero-rays"${raysStyle}></div>
+    <div class="mpg-hero-stripes"${stripesStyle}></div>
     <div class="mpg-hero-glow"></div>
     <div class="mpg-confetti"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <span class="mpg-fx">⚾</span>
